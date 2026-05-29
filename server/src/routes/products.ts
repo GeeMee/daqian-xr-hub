@@ -83,6 +83,8 @@ productsRouter.post('/', async (req, res) => {
   const product = await prisma.product.create({
     data: {
       ...data,
+      description: data.description || '',
+      notices: data.notices || '',
       recommendations: JSON.stringify(recommendations || []),
     },
   })
