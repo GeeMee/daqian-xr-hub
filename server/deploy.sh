@@ -1,7 +1,7 @@
 #!/bin/bash
 # 大千迷境 XR Server - ECS 一键部署脚本
-# 系统要求：Ubuntu 22.04
-# 运行方式：sudo bash deploy.sh
+# 系统：Ubuntu 22.04 | IP: 8.153.73.225
+# 运行：sudo bash deploy.sh
 
 set -e
 
@@ -10,7 +10,7 @@ apt update && apt upgrade -y
 
 echo "===== 2. 安装 Node.js 20 ====="
 curl -fsSL https://deb.nodesource.com/setup_20.x | bash -
-apt install -y nodejs
+apt install -y nodejs git
 node -v && npm -v
 
 echo "===== 3. 安装 MySQL 8 ====="
@@ -32,12 +32,35 @@ systemctl enable nginx
 echo "===== 6. 安装 PM2 ====="
 npm install -g pm2
 
-echo "===== 7. 创建项目目录 ====="
-mkdir -p /opt/daqian-xr-server
-chown -R $SUDO_USER:$SUDO_USER /opt/daqian-xr-server
+echo "===== 7. 克隆代码（只拉 server 目录） ====="
+cd /opt
+git clone --depth 1 --filter=blob:none --sparse https://github.com/GeeMee/daqian-xr-hub.git
+cd daqian-xr-hub
+git sparse-checkout set server
+cd server
 
-echo "===== 8. 配置 Nginx 反向代理 ====="
-cat > /etc/nginx/sites-available/daqian-xr << 'EOF'
+echo "===== 8. 安装依赖 ====="
+npm install
+
+echo "===== 9. 配置环境变量 ====="
+echo "请手动编辑 .env 文件填入密钥："
+cp .env.example .env
+echo "  nano /opt/daqian-xr-hub/server/.env"
+echo "  填入 DATABASE_URL, ALIYUN_OSS_ACCESS_KEY_ID, ALIYUN_OSS_ACCESS_KEY_SECRET"
+echo ""
+read -p "编辑完成后按 Enter 继续..."
+
+echo "===== 10. 初始化数据库 ====="
+npx prisma db push
+npx tsx src/seed.ts
+
+echo "===== 11. 启动服务 ====="
+pm2 start "npx tsx src/index.ts" --name daqian-xr
+pm2 save
+pm2 startup
+
+echo "===== 12. 配置 Nginx ====="
+cat > /etc/nginx/sites-available/daqian-xr << 'NGINX'
 server {
     listen 80;
     server_name 8.153.73.225;
@@ -53,26 +76,20 @@ server {
     }
 
     location / {
-        root /opt/daqian-xr-server/admin-dist;
+        root /opt/daqian-xr-hub/admin-dist;
         index index.html;
         try_files $uri $uri/ /index.html;
     }
 }
-EOF
+NGINX
 
 ln -sf /etc/nginx/sites-available/daqian-xr /etc/nginx/sites-enabled/
 rm -f /etc/nginx/sites-enabled/default
 nginx -t && systemctl reload nginx
 
-echo "===== 部署环境准备完成 ====="
 echo ""
-echo "接下来手动操作："
-echo "1. 将 server 代码上传到 /opt/daqian-xr-server/"
-echo "2. cd /opt/daqian-xr-server && npm install"
-echo "3. cp .env.production .env"
-echo "4. npx prisma db push"
-echo "5. npx tsx src/seed.ts"
-echo "6. pm2 start dist/index.js --name daqian-xr"
+echo "===== 部署完成！ ====="
+echo "API 地址：http://8.153.73.225/api/health"
 echo ""
-echo "或者用开发模式："
-echo "6. pm2 start 'npx tsx src/index.ts' --name daqian-xr"
+echo "后续更新代码："
+echo "  cd /opt/daqian-xr-hub && git pull && cd server && npm install && pm2 restart daqian-xr"
