@@ -1,0 +1,24 @@
+{
+  "name": "daqianmijing",
+  "appid": "__UNI__PLACEHOLDER",
+  "description": "大千迷境XR影院产品介绍",
+  "versionName": "1.0.0",
+  "versionCode": "100",
+  "transformPx": false,
+  "mp-weixin": {
+    "appid": "",
+    "setting": {
+      "urlCheck": false,
+      "es6": true,
+      "postcss": true,
+      "minified": true
+    },
+    "usingComponents": true
+  },
+  "h5": {
+    "title": "大千迷境XR影院",
+    "router": {
+      "mode": "hash"
+    }
+  }
+}

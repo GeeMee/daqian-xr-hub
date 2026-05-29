@@ -1,0 +1,62 @@
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model Category {
+  id        String    @id @default(cuid())
+  name      String
+  sortOrder Int       @default(0)
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  products  Product[]
+}
+
+model Product {
+  id              String   @id @default(cuid())
+  name            String
+  categoryId      String
+  category        Category @relation(fields: [categoryId], references: [id])
+  poster          String   @default("")
+  video           String   @default("")
+  shortDesc       String   @default("")
+  horrorLevel     Int      @default(1)
+  playerCount     String   @default("")
+  duration        String   @default("")
+  description     String   @default("") @db.Text
+  recommendations String   @default("[]") @db.Text
+  notices         String   @default("") @db.Text
+  isRecommended   Boolean  @default(false)
+  isOnShelf       Boolean  @default(true)
+  sortOrder       Int      @default(0)
+  onlineDate      String   @default("")
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  banners         Banner[]
+}
+
+model Banner {
+  id        String   @id @default(cuid())
+  image     String
+  productId String
+  product   Product  @relation(fields: [productId], references: [id])
+  sortOrder Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Setting {
+  id            String   @id @default("main")
+  brandName     String   @default("")
+  logo          String   @default("")
+  slogan        String   @default("")
+  phone         String   @default("")
+  storeName     String   @default("")
+  address       String   @default("")
+  businessHours String   @default("")
+  updatedAt     DateTime @updatedAt
+}

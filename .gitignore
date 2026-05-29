@@ -1,0 +1,22 @@
+node_modules/
+dist/
+.env
+.env.local
+
+# Server
+server/node_modules/
+server/dist/
+server/uploads/
+server/prisma/dev.db
+server/prisma/dev.db-journal
+server/.env
+server/.env.production
+
+# Admin
+admin/node_modules/
+admin/dist/
+
+# Miniapp
+miniapp/node_modules/
+miniapp/dist/
+miniapp/.hbuilderx/
