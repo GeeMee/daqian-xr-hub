@@ -36,29 +36,35 @@ export function ProductEditPage() {
 
   useEffect(() => {
     const load = async () => {
-      const catRes = await api.categories.list()
-      setCategories(catRes.data)
-      if (isEdit) {
-        const product = await api.products.get(id!)
-        setForm({
-          name: product.name,
-          categoryId: product.categoryId,
-          poster: product.poster,
-          video: product.video || '',
-          shortDesc: product.shortDesc,
-          horrorLevel: product.horrorLevel,
-          playerCount: product.playerCount,
-          duration: product.duration,
-          onlineDate: product.onlineDate || '',
-          description: product.description,
-          recommendations: product.recommendations || [],
-          notices: product.notices,
-          isRecommended: product.isRecommended,
-          sortOrder: product.sortOrder,
-          isOnShelf: product.isOnShelf,
-        })
+      try {
+        const catRes = await api.categories.list()
+        setCategories(catRes.data)
+        if (isEdit) {
+          const product = await api.products.get(id!)
+          setForm({
+            name: product.name,
+            categoryId: product.categoryId,
+            poster: product.poster,
+            video: product.video || '',
+            shortDesc: product.shortDesc,
+            horrorLevel: product.horrorLevel,
+            playerCount: product.playerCount,
+            duration: product.duration,
+            onlineDate: product.onlineDate || '',
+            description: product.description,
+            recommendations: product.recommendations || [],
+            notices: product.notices,
+            isRecommended: product.isRecommended,
+            sortOrder: product.sortOrder,
+            isOnShelf: product.isOnShelf,
+          })
+        }
+      } catch (e) {
+        console.error('加载数据失败:', e)
+        alert('加载数据失败，请检查网络连接')
+      } finally {
+        setLoading(false)
       }
-      setLoading(false)
     }
     load()
   }, [id])
