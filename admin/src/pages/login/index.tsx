@@ -7,19 +7,22 @@ export function LoginPage() {
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
   const [remember, setRemember] = useState(false)
+  const [loading, setLoading] = useState(false)
   const login = useAuthStore((s) => s.login)
   const navigate = useNavigate()
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setError('')
     if (!username) { setError('请输入账号'); return }
     if (!password) { setError('请输入密码'); return }
-    const success = login(username, password)
+    setLoading(true)
+    const success = await login(username, password)
+    setLoading(false)
     if (success) {
       navigate('/')
     } else {
-      setError('账号或密码错误（密码至少6位）')
+      setError('账号或密码错误')
     }
   }
 
@@ -73,9 +76,10 @@ export function LoginPage() {
 
           <button
             type="submit"
-            className="w-full py-2.5 bg-gray-900 text-white text-sm font-medium rounded-lg hover:bg-gray-800 transition-colors"
+            disabled={loading}
+            className="w-full py-2.5 bg-gray-900 text-white text-sm font-medium rounded-lg hover:bg-gray-800 transition-colors disabled:opacity-50"
           >
-            登录
+            {loading ? '登录中...' : '登录'}
           </button>
         </form>
       </div>

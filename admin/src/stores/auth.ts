@@ -1,31 +1,36 @@
 import { create } from 'zustand'
+import { api } from '../lib/api'
 
 interface AuthState {
   isLoggedIn: boolean
   username: string
-  role: 'super' | 'normal'
-  login: (username: string, password: string) => boolean
+  token: string
+  login: (username: string, password: string) => Promise<boolean>
   logout: () => void
+  checkAuth: () => boolean
 }
 
-export const useAuthStore = create<AuthState>((set) => ({
-  isLoggedIn: localStorage.getItem('isLoggedIn') === 'true',
+export const useAuthStore = create<AuthState>((set, get) => ({
+  isLoggedIn: !!localStorage.getItem('token'),
   username: localStorage.getItem('username') || '',
-  role: (localStorage.getItem('role') as 'super' | 'normal') || 'super',
-  login: (username: string, _password: string) => {
-    if (username && _password.length >= 6) {
-      localStorage.setItem('isLoggedIn', 'true')
-      localStorage.setItem('username', username)
-      localStorage.setItem('role', 'super')
-      set({ isLoggedIn: true, username, role: 'super' })
+  token: localStorage.getItem('token') || '',
+  login: async (username: string, password: string) => {
+    try {
+      const res = await api.auth.login(username, password)
+      localStorage.setItem('token', res.token)
+      localStorage.setItem('username', res.username)
+      set({ isLoggedIn: true, username: res.username, token: res.token })
       return true
+    } catch {
+      return false
     }
-    return false
   },
   logout: () => {
-    localStorage.removeItem('isLoggedIn')
+    localStorage.removeItem('token')
     localStorage.removeItem('username')
-    localStorage.removeItem('role')
-    set({ isLoggedIn: false, username: '', role: 'super' })
+    set({ isLoggedIn: false, username: '', token: '' })
+  },
+  checkAuth: () => {
+    return !!get().token
   },
 }))

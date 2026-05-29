@@ -1,10 +1,23 @@
 const BASE_URL = import.meta.env.PROD ? 'http://8.153.73.225/api' : 'http://localhost:3000/api'
 
+function getToken() {
+  return localStorage.getItem('token') || ''
+}
+
 async function request<T>(path: string, options?: RequestInit): Promise<T> {
-  const res = await fetch(`${BASE_URL}${path}`, {
-    headers: { 'Content-Type': 'application/json' },
-    ...options,
-  })
+  const headers: Record<string, string> = { 'Content-Type': 'application/json' }
+  const token = getToken()
+  if (token) headers['Authorization'] = `Bearer ${token}`
+
+  const res = await fetch(`${BASE_URL}${path}`, { headers, ...options })
+
+  if (res.status === 401) {
+    localStorage.removeItem('token')
+    localStorage.removeItem('username')
+    window.location.href = '/login'
+    throw new Error('未登录')
+  }
+
   if (!res.ok) {
     const err = await res.json().catch(() => ({ error: res.statusText }))
     throw new Error(err.error || 'Request failed')
@@ -13,6 +26,20 @@ async function request<T>(path: string, options?: RequestInit): Promise<T> {
 }
 
 export const api = {
+  auth: {
+    login: async (username: string, password: string) => {
+      const res = await fetch(`${BASE_URL}/auth/login`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username, password }),
+      })
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({ error: '登录失败' }))
+        throw new Error(err.error || '登录失败')
+      }
+      return res.json() as Promise<{ token: string; username: string }>
+    },
+  },
   products: {
     list: (params?: { search?: string; category?: string; status?: string }) => {
       const query = new URLSearchParams()
@@ -46,7 +73,16 @@ export const api = {
   upload: async (file: File) => {
     const formData = new FormData()
     formData.append('file', file)
-    const res = await fetch(`${BASE_URL}/upload`, { method: 'POST', body: formData })
+    const token = getToken()
+    const headers: Record<string, string> = {}
+    if (token) headers['Authorization'] = `Bearer ${token}`
+    const res = await fetch(`${BASE_URL}/upload`, { method: 'POST', headers, body: formData })
+    if (res.status === 401) {
+      localStorage.removeItem('token')
+      localStorage.removeItem('username')
+      window.location.href = '/login'
+      throw new Error('未登录')
+    }
     if (!res.ok) throw new Error('Upload failed')
     return res.json() as Promise<{ url: string }>
   },
