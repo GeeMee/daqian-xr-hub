@@ -34,14 +34,28 @@
       </view>
 
       <!-- 产品简介 -->
-      <view class="desc-section">
-        <text class="desc-label">产品简介</text>
+      <view class="desc-section section-block">
+        <text class="section-title">产品简介</text>
         <rich-text class="desc-text" :nodes="product.description || ''" />
       </view>
 
+      <!-- 产品图片 -->
+      <view v-if="product.images && product.images.length > 0" class="images-section section-block">
+        <view class="images-list">
+          <image
+            v-for="(img, index) in product.images"
+            :key="index"
+            class="detail-image"
+            :src="img"
+            mode="widthFix"
+            @click="previewImage(index)"
+          />
+        </view>
+      </view>
+
       <!-- 官方推荐 -->
-      <view v-if="product.recommendations && product.recommendations.length > 0" class="recommend-section">
-        <text class="recommend-title">官方推荐</text>
+      <view v-if="product.recommendations && product.recommendations.length > 0" class="recommend-section section-block">
+        <text class="section-title">官方推荐</text>
         <view class="recommend-list">
           <view v-for="(item, index) in product.recommendations" :key="index" class="recommend-item">
             <text class="recommend-icon">{{ item.icon }}</text>
@@ -51,8 +65,8 @@
       </view>
 
       <!-- 观演须知 -->
-      <view v-if="product.notices" class="notice-section">
-        <text class="notice-title">【观演须知】</text>
+      <view v-if="product.notices" class="notice-section section-block">
+        <text class="section-title">【观演须知】</text>
         <rich-text class="notice-text" :nodes="product.notices" />
       </view>
     </view>
@@ -94,6 +108,13 @@ function goBack() {
 
 function toggleFavorite() {
   isFavorited.value = !isFavorited.value
+}
+
+function previewImage(index: number) {
+  uni.previewImage({
+    current: index,
+    urls: product.value.images,
+  })
 }
 </script>
 
@@ -200,18 +221,27 @@ function toggleFavorite() {
   color: #ccc;
 }
 
-/* 产品简介 */
-.desc-section {
+/* 段落区块 */
+.section-block {
   padding: 32rpx 0;
   border-bottom: 1rpx solid #f0f0f0;
 }
 
-.desc-label {
+.section-block:last-child {
+  border-bottom: none;
+}
+
+.section-title {
   display: block;
   font-size: 30rpx;
   font-weight: 600;
   color: #1a1a1a;
-  margin-bottom: 16rpx;
+  margin-bottom: 20rpx;
+}
+
+/* 产品简介 */
+.desc-section {
+  padding: 32rpx 0;
 }
 
 .desc-text {
@@ -220,18 +250,25 @@ function toggleFavorite() {
   line-height: 2;
 }
 
+/* 产品图片 */
+.images-section {
+  padding: 24rpx 0;
+}
+
+.images-list {
+  display: flex;
+  flex-direction: column;
+  gap: 16rpx;
+}
+
+.detail-image {
+  width: 100%;
+  border-radius: 12rpx;
+}
+
 /* 官方推荐 */
 .recommend-section {
   padding: 32rpx 0;
-  border-bottom: 1rpx solid #f0f0f0;
-}
-
-.recommend-title {
-  display: block;
-  font-size: 30rpx;
-  font-weight: 600;
-  color: #1a1a1a;
-  margin-bottom: 16rpx;
 }
 
 .recommend-list {
@@ -262,23 +299,6 @@ function toggleFavorite() {
 /* 观演须知 */
 .notice-section {
   padding-top: 32rpx;
-}
-
-.notice-title {
-  display: block;
-  font-size: 30rpx;
-  font-weight: 600;
-  color: #1a1a1a;
-  margin-bottom: 24rpx;
-}
-
-.notice-subtitle {
-  display: block;
-  font-size: 28rpx;
-  font-weight: 500;
-  color: #333;
-  margin-top: 20rpx;
-  margin-bottom: 8rpx;
 }
 
 .notice-text {

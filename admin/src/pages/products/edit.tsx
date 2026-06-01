@@ -28,6 +28,7 @@ export function ProductEditPage() {
     onlineDate: '',
     description: '',
     recommendations: [] as { icon: string; text: string }[],
+    images: [] as string[],
     notices: '',
     isRecommended: false,
     sortOrder: 0,
@@ -53,6 +54,7 @@ export function ProductEditPage() {
             onlineDate: product.onlineDate || '',
             description: product.description,
             recommendations: product.recommendations || [],
+            images: product.images || [],
             notices: product.notices,
             isRecommended: product.isRecommended,
             sortOrder: product.sortOrder,
@@ -209,6 +211,37 @@ export function ProductEditPage() {
           <div className="space-y-5 max-w-2xl">
             <Field label="产品简介">
               <RichTextEditor value={form.description} onChange={(val) => update('description', val)} placeholder="详细介绍产品的背景故事、核心剧情、体验亮点" />
+            </Field>
+            <Field label="产品图片">
+              <div className="grid grid-cols-4 gap-3">
+                {form.images.map((url, index) => (
+                  <div key={index} className="relative group">
+                    <img src={url} alt="" className="w-full h-24 rounded-lg object-cover border border-gray-200" />
+                    <button type="button" onClick={() => setForm({ ...form, images: form.images.filter((_, i) => i !== index) })} className="absolute -top-2 -right-2 w-5 h-5 bg-red-500 text-white rounded-full text-xs flex items-center justify-center hover:bg-red-600 opacity-0 group-hover:opacity-100 transition-opacity">×</button>
+                  </div>
+                ))}
+                <label className={`w-full h-24 border-2 border-dashed border-gray-300 rounded-lg flex flex-col items-center justify-center cursor-pointer hover:border-gray-400 hover:bg-gray-50 ${uploading === 'images' ? 'opacity-50 pointer-events-none' : ''}`}>
+                  <Plus size={20} className="text-gray-400" />
+                  <span className="text-xs text-gray-400 mt-1">{uploading === 'images' ? '上传中...' : '添加图片'}</span>
+                  <input type="file" accept="image/*" multiple className="hidden" onChange={async (e) => {
+                    const files = e.target.files
+                    if (files && files.length > 0) {
+                      setUploading('images')
+                      try {
+                        const urls: string[] = []
+                        for (const file of Array.from(files)) {
+                          const { url } = await api.upload(file)
+                          urls.push(url)
+                        }
+                        setForm((prev) => ({ ...prev, images: [...prev.images, ...urls] }))
+                      } catch { alert('图片上传失败') }
+                      setUploading('')
+                    }
+                    e.target.value = ''
+                  }} />
+                </label>
+              </div>
+              <p className="text-xs text-gray-400 mt-1">支持多选，图片将在详情页「产品简介」下方展示</p>
             </Field>
             <Field label="官方推荐理由">
               <div className="space-y-3">

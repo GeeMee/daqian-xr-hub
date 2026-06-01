@@ -89,30 +89,33 @@ productsRouter.get('/:id', async (req, res) => {
   res.json({
     ...product,
     recommendations: JSON.parse(product.recommendations),
+    images: JSON.parse(product.images),
     categoryName: product.category.name,
   })
 })
 
 productsRouter.post('/', async (req, res) => {
-  const { recommendations, ...data } = req.body
+  const { recommendations, images, ...data } = req.body
   const product = await prisma.product.create({
     data: {
       ...data,
       description: data.description || '',
       notices: data.notices || '',
       recommendations: JSON.stringify(recommendations || []),
+      images: JSON.stringify(images || []),
     },
   })
   res.json(product)
 })
 
 productsRouter.put('/:id', async (req, res) => {
-  const { recommendations, ...data } = req.body
+  const { recommendations, images, ...data } = req.body
   const product = await prisma.product.update({
     where: { id: req.params.id },
     data: {
       ...data,
       recommendations: recommendations ? JSON.stringify(recommendations) : undefined,
+      images: images ? JSON.stringify(images) : undefined,
     },
   })
   res.json(product)
