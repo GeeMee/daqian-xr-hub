@@ -300,10 +300,7 @@ async function fetchSortList(sortKey: string) {
     try {
       const type = sortKey === 'daily' ? 0 : 1
       sortOrderList.value = await api.getSortList(type)
-      console.log(`[排序] 类型: ${sortKey === 'daily' ? '当日' : '当月'}, 接口返回顺序:`, sortOrderList.value)
-      console.log(`[排序] 当前产品列表:`, products.value.map(p => p.name))
     } catch (e) {
-      console.error('Failed to fetch sort list:', e)
       sortOrderList.value = []
     }
   } else {

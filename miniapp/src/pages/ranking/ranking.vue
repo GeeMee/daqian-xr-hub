@@ -74,7 +74,7 @@ onMounted(async () => {
     }
     rankedProducts.value = result
   } catch (e) {
-    console.error('Failed to load ranking:', e)
+    // silently fail
   }
 })
 
