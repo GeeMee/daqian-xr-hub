@@ -1,7 +1,5 @@
 const BASE_URL = import.meta.env.DEV ? 'http://localhost:3000/api' : 'http://8.153.73.225/api'
-const SORT_API_URL = import.meta.env.DEV
-  ? 'http://192.168.3.69:9999/api/miniprogram/getcpsortlist'
-  : 'https://webapi.beyondthegame.fun/api/miniprogram/getcpsortlist'
+const SORT_API_URL = 'http://192.168.3.69:9999/api/miniprogram/getcpsortlist'
 
 function request<T>(path: string): Promise<T> {
   return new Promise((resolve, reject) => {

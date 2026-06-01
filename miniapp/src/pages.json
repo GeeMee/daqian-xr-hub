@@ -15,6 +15,13 @@
       }
     },
     {
+      "path": "pages/ranking/ranking",
+      "style": {
+        "navigationBarTitleText": "票房榜单",
+        "navigationStyle": "custom"
+      }
+    },
+    {
       "path": "pages/mine/mine",
       "style": {
         "navigationBarTitleText": "我的",
@@ -48,6 +55,10 @@
       {
         "pagePath": "pages/products/products",
         "text": "产品列表"
+      },
+      {
+        "pagePath": "pages/ranking/ranking",
+        "text": "票房榜单"
       },
       {
         "pagePath": "pages/mine/mine",
