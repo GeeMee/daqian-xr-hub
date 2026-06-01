@@ -181,8 +181,8 @@ function goDetail(productId: string) {
 
 .rank-poster {
   flex-shrink: 0;
-  width: 150rpx;
-  height: 200rpx;
+  width: 180rpx;
+  height: 240rpx;
   border-radius: 12rpx;
   overflow: hidden;
   margin-right: 20rpx;
