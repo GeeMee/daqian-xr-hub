@@ -175,6 +175,7 @@ const upcomingAll = ref<any[]>([])
 
 const selectedCategory = ref<string>('all')
 const selectedSort = ref<string>('default')
+const sortOrderList = ref<string[]>([])
 
 const panelKey = ref<PanelKey>('')
 const tempSelected = ref<string>('')
@@ -200,12 +201,14 @@ const filteredProducts = computed(() => {
   if (selectedCategory.value !== 'all') {
     list = list.filter((p) => p.categoryId === selectedCategory.value)
   }
-  // 排序逻辑暂用前端 mock，等接口提供后替换
   const sorted = [...list]
-  if (selectedSort.value === 'monthly') {
-    sorted.sort((a, b) => (b.onlineDate || '').localeCompare(a.onlineDate || ''))
-  } else if (selectedSort.value === 'daily') {
-    sorted.sort((a, b) => (a.id || '').localeCompare(b.id || ''))
+  if ((selectedSort.value === 'monthly' || selectedSort.value === 'daily') && sortOrderList.value.length > 0) {
+    const orderMap = new Map(sortOrderList.value.map((name, idx) => [name, idx]))
+    sorted.sort((a, b) => {
+      const idxA = orderMap.has(a.name) ? orderMap.get(a.name)! : 9999
+      const idxB = orderMap.has(b.name) ? orderMap.get(b.name)! : 9999
+      return idxA - idxB
+    })
   } else {
     sorted.sort((a, b) => (a.sortOrder || 0) - (b.sortOrder || 0))
   }
@@ -269,8 +272,23 @@ function confirmPanel() {
     selectedCategory.value = tempSelected.value
   } else if (panelKey.value === 'sort') {
     selectedSort.value = tempSelected.value
+    fetchSortList(tempSelected.value)
   }
   closePanel()
+}
+
+async function fetchSortList(sortKey: string) {
+  if (sortKey === 'monthly' || sortKey === 'daily') {
+    try {
+      const type = sortKey === 'daily' ? 0 : 1
+      sortOrderList.value = await api.getSortList(type)
+    } catch (e) {
+      console.error('Failed to fetch sort list:', e)
+      sortOrderList.value = []
+    }
+  } else {
+    sortOrderList.value = []
+  }
 }
 
 function goDetail(productId: string) {
