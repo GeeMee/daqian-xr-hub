@@ -2,7 +2,7 @@
   <view class="page">
     <view class="hero" :style="{ paddingTop: statusBarHeight + 'px' }">
       <view class="hero-content">
-        <text class="hero-title">🌿 票房榜单 🌿</text>
+        <text class="hero-title">票房榜单</text>
       </view>
     </view>
 
@@ -92,7 +92,7 @@ function goDetail(productId: string) {
 }
 
 .hero {
-  background: linear-gradient(180deg, #1a2e1a, #2d4a2d, #1a2e1a);
+  background: linear-gradient(180deg, #0f2e0f, #1a4a1a, #0f2e0f);
   position: relative;
 }
 
@@ -100,14 +100,14 @@ function goDetail(productId: string) {
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 40rpx 32rpx 48rpx;
+  padding: 56rpx 32rpx 64rpx;
 }
 
 .hero-title {
-  font-size: 40rpx;
+  font-size: 52rpx;
   font-weight: 700;
   color: #ffffff;
-  letter-spacing: 6rpx;
+  letter-spacing: 8rpx;
 }
 
 .sub-header {
@@ -123,35 +123,32 @@ function goDetail(productId: string) {
 
 .rank-list {
   flex: 1;
-  padding: 16rpx 24rpx;
+  padding: 16rpx 0;
   box-sizing: border-box;
 }
 
 .rank-item {
   display: flex;
   align-items: center;
-  padding: 20rpx;
+  padding: 24rpx 24rpx;
   background: #ffffff;
-  border-radius: 16rpx;
-  margin-bottom: 16rpx;
+  margin-bottom: 2rpx;
   position: relative;
 }
 
 .rank-badge {
-  position: absolute;
-  top: 20rpx;
-  left: 20rpx;
-  width: 36rpx;
-  height: 36rpx;
-  border-radius: 8rpx;
+  flex-shrink: 0;
+  width: 44rpx;
+  height: 44rpx;
+  border-radius: 10rpx;
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 2;
+  margin-right: 16rpx;
 }
 
 .badge-text {
-  font-size: 22rpx;
+  font-size: 26rpx;
   font-weight: 700;
   color: #ffffff;
 }
@@ -203,7 +200,7 @@ function goDetail(productId: string) {
 }
 
 .rank-name {
-  font-size: 28rpx;
+  font-size: 30rpx;
   font-weight: 600;
   color: #1a1a1a;
   line-height: 1.4;
@@ -214,14 +211,14 @@ function goDetail(productId: string) {
 }
 
 .rank-duration {
-  margin-top: 8rpx;
-  font-size: 24rpx;
+  margin-top: 10rpx;
+  font-size: 26rpx;
   color: #666;
 }
 
 .rank-desc {
   margin-top: 8rpx;
-  font-size: 22rpx;
+  font-size: 24rpx;
   color: #999;
   line-height: 1.5;
   display: -webkit-box;
