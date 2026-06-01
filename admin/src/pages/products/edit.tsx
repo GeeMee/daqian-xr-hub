@@ -257,6 +257,14 @@ export function ProductEditPage() {
                 <span className="text-sm text-gray-600">上架后将在小程序端展示</span>
               </label>
             </Field>
+            {!form.isOnShelf && (
+              <Field label="是否推荐（即将上映）">
+                <label className="flex items-center gap-2">
+                  <input type="checkbox" checked={form.isRecommended} onChange={(e) => update('isRecommended', e.target.checked)} className="rounded border-gray-300" />
+                  <span className="text-sm text-gray-600">开启后将在小程序「即将上映」的推荐栏展示</span>
+                </label>
+              </Field>
+            )}
           </div>
         )}
       </div>

@@ -65,6 +65,21 @@ productsRouter.get('/home', async (_req, res) => {
   })
 })
 
+productsRouter.get('/upcoming', async (_req, res) => {
+  const all = await prisma.product.findMany({
+    where: { isOnShelf: false },
+    orderBy: { sortOrder: 'asc' },
+  })
+  const formatted = all.map((p) => ({
+    ...p,
+    recommendations: JSON.parse(p.recommendations),
+  }))
+  res.json({
+    recommended: formatted.filter((p) => p.isRecommended),
+    all: formatted,
+  })
+})
+
 productsRouter.get('/:id', async (req, res) => {
   const product = await prisma.product.findUnique({
     where: { id: req.params.id },

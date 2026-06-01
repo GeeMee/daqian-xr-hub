@@ -20,27 +20,34 @@
       </view>
 
       <!-- 本月推荐 -->
-      <view v-if="homeData.recommendedProducts.length > 0" class="section">
+      <view v-if="homeData.recommendedProducts.length > 0" class="section recommend-section">
         <view class="section-header">
           <text class="section-header-title">本月推荐</text>
-          <text class="section-header-stars">★★★★★</text>
         </view>
-        <view class="recommend-list">
-          <view
-            v-for="product in homeData.recommendedProducts"
-            :key="product.id"
-            class="recommend-item"
-            @click="goDetail(product.id)"
-          >
-            <view class="recommend-text">
-              <text class="recommend-name">{{ product.name }}</text>
-              <text class="recommend-desc">{{ product.shortDesc }}</text>
-            </view>
-            <view class="recommend-thumb">
-              <image class="thumb-image" :src="product.poster" mode="aspectFill" />
+        <scroll-view class="recommend-scroll" scroll-x :show-scrollbar="false">
+          <view class="recommend-track">
+            <view
+              v-for="(column, idx) in recommendColumns"
+              :key="idx"
+              class="recommend-column"
+            >
+              <view
+                v-for="product in column"
+                :key="product.id"
+                class="recommend-card"
+                @click="goDetail(product.id)"
+              >
+                <view class="recommend-cover">
+                  <image class="cover-image" :src="product.poster" mode="aspectFit" />
+                </view>
+                <view class="recommend-info">
+                  <text class="recommend-name">{{ product.name }}</text>
+                  <text class="recommend-desc">{{ product.shortDesc }}</text>
+                </view>
+              </view>
             </view>
           </view>
-        </view>
+        </scroll-view>
       </view>
 
       <!-- 近期上新 -->
@@ -71,7 +78,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import NavBar from '../../components/NavBar.vue'
 import SectionTitle from '../../components/SectionTitle.vue'
 import { api } from '../../lib/api'
@@ -81,6 +88,15 @@ const homeData = ref<{ banners: any[]; recommendedProducts: any[]; newProducts: 
   banners: [],
   recommendedProducts: [],
   newProducts: [],
+})
+
+const recommendColumns = computed(() => {
+  const list = homeData.value.recommendedProducts
+  const cols: any[][] = []
+  for (let i = 0; i < list.length; i += 3) {
+    cols.push(list.slice(i, i + 3))
+  }
+  return cols
 })
 
 onMounted(async () => {
@@ -164,37 +180,66 @@ function getTagClass(tag: string): string {
   color: #1a1a1a;
 }
 
-.section-header-stars {
-  font-size: 24rpx;
-  color: #fa8c16;
+/* 本月推荐 - 3 行网格，超出向右滚动 */
+.recommend-section {
+  padding: 0;
 }
 
-/* 本月推荐 */
-.recommend-list {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 1rpx;
-  background: #e5e5e5;
-  border: 1rpx solid #e5e5e5;
-  border-radius: 12rpx;
-  overflow: hidden;
+.recommend-section .section-header {
+  padding: 32rpx 24rpx 20rpx;
 }
 
-.recommend-item {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  background: #ffffff;
-  padding: 24rpx 20rpx;
-  min-height: 140rpx;
+.recommend-scroll {
+  width: 100%;
+  white-space: nowrap;
 }
 
-.recommend-text {
-  flex: 1;
+.recommend-track {
+  display: inline-flex;
+  gap: 16rpx;
+  padding: 0 24rpx 8rpx;
+  align-items: flex-start;
+}
+
+.recommend-column {
+  flex-shrink: 0;
+  width: 460rpx;
   display: flex;
   flex-direction: column;
-  gap: 8rpx;
-  padding-right: 16rpx;
+  gap: 16rpx;
+}
+
+.recommend-card {
+  width: 100%;
+  display: flex;
+  background: #ffffff;
+  border-radius: 16rpx;
+  overflow: hidden;
+  box-shadow: 0 2rpx 12rpx rgba(0, 0, 0, 0.04);
+  white-space: normal;
+}
+
+.recommend-cover {
+  flex-shrink: 0;
+  width: 130rpx;
+  height: 170rpx;
+  background: #f5f5f7;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.cover-image {
+  width: 100%;
+  height: 100%;
+}
+
+.recommend-info {
+  flex: 1;
+  padding: 16rpx 20rpx;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
 }
 
 .recommend-name {
@@ -202,25 +247,21 @@ function getTagClass(tag: string): string {
   font-weight: 600;
   color: #1a1a1a;
   line-height: 1.4;
-}
-
-.recommend-desc {
-  font-size: 22rpx;
-  color: #999;
-  line-height: 1.4;
-}
-
-.recommend-thumb {
-  flex-shrink: 0;
-  width: 90rpx;
-  height: 120rpx;
-  border-radius: 8rpx;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 1;
   overflow: hidden;
 }
 
-.thumb-image {
-  width: 100%;
-  height: 100%;
+.recommend-desc {
+  margin-top: 10rpx;
+  font-size: 22rpx;
+  color: #666;
+  line-height: 1.5;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+  overflow: hidden;
 }
 
 /* 近期上新 */
