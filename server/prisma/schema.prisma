@@ -30,7 +30,7 @@ model Product {
   description     String   @db.Text
   recommendations String   @db.Text
   notices         String   @db.Text
-  images          String   @default("[]") @db.Text
+  images          String   @db.Text
   isRecommended   Boolean  @default(false)
   isOnShelf       Boolean  @default(true)
   sortOrder       Int      @default(0)

@@ -89,7 +89,7 @@ productsRouter.get('/:id', async (req, res) => {
   res.json({
     ...product,
     recommendations: JSON.parse(product.recommendations),
-    images: JSON.parse(product.images),
+    images: JSON.parse(product.images || '[]'),
     categoryName: product.category.name,
   })
 })
