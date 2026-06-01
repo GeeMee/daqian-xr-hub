@@ -215,12 +215,18 @@ const filteredProducts = computed(() => {
 })
 
 function getSortIndex(productName: string): number {
+  // 优先精确匹配
+  for (let i = 0; i < sortOrderList.value.length; i++) {
+    if (sortOrderList.value[i] === productName) {
+      return i
+    }
+  }
+  // 子串匹配，取排名最靠前的
   let minIdx = 9999
   for (let i = 0; i < sortOrderList.value.length; i++) {
     const sortName = sortOrderList.value[i]
     if (productName.includes(sortName) || sortName.includes(productName)) {
       minIdx = Math.min(minIdx, i)
-      break
     }
   }
   return minIdx
