@@ -86,7 +86,7 @@ function goDetail(productId: string) {
 <style scoped lang="scss">
 .page {
   min-height: 100vh;
-  background-color: #f5f5f7;
+  background-color: #ffffff;
   display: flex;
   flex-direction: column;
 }
@@ -123,7 +123,7 @@ function goDetail(productId: string) {
 
 .rank-list {
   flex: 1;
-  padding: 16rpx 0;
+  padding: 0;
   box-sizing: border-box;
 }
 
@@ -132,23 +132,25 @@ function goDetail(productId: string) {
   align-items: center;
   padding: 24rpx 24rpx;
   background: #ffffff;
-  margin-bottom: 2rpx;
+  border-bottom: 1rpx solid #f5f5f5;
   position: relative;
 }
 
 .rank-badge {
-  flex-shrink: 0;
-  width: 44rpx;
-  height: 44rpx;
-  border-radius: 10rpx;
+  position: absolute;
+  top: 24rpx;
+  left: 24rpx;
+  width: 40rpx;
+  height: 40rpx;
+  border-radius: 8rpx;
   display: flex;
   align-items: center;
   justify-content: center;
-  margin-right: 16rpx;
+  z-index: 2;
 }
 
 .badge-text {
-  font-size: 26rpx;
+  font-size: 24rpx;
   font-weight: 700;
   color: #ffffff;
 }
