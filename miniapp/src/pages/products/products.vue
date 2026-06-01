@@ -203,10 +203,9 @@ const filteredProducts = computed(() => {
   }
   const sorted = [...list]
   if ((selectedSort.value === 'monthly' || selectedSort.value === 'daily') && sortOrderList.value.length > 0) {
-    const orderMap = new Map(sortOrderList.value.map((name, idx) => [name, idx]))
     sorted.sort((a, b) => {
-      const idxA = orderMap.has(a.name) ? orderMap.get(a.name)! : 9999
-      const idxB = orderMap.has(b.name) ? orderMap.get(b.name)! : 9999
+      const idxA = getSortIndex(a.name)
+      const idxB = getSortIndex(b.name)
       return idxA - idxB
     })
   } else {
@@ -214,6 +213,18 @@ const filteredProducts = computed(() => {
   }
   return sorted
 })
+
+function getSortIndex(productName: string): number {
+  let minIdx = 9999
+  for (let i = 0; i < sortOrderList.value.length; i++) {
+    const sortName = sortOrderList.value[i]
+    if (productName.includes(sortName) || sortName.includes(productName)) {
+      minIdx = Math.min(minIdx, i)
+      break
+    }
+  }
+  return minIdx
+}
 
 onMounted(async () => {
   const systemInfo = uni.getSystemInfoSync()
@@ -282,6 +293,8 @@ async function fetchSortList(sortKey: string) {
     try {
       const type = sortKey === 'daily' ? 0 : 1
       sortOrderList.value = await api.getSortList(type)
+      console.log(`[排序] 类型: ${sortKey === 'daily' ? '当日' : '当月'}, 接口返回顺序:`, sortOrderList.value)
+      console.log(`[排序] 当前产品列表:`, products.value.map(p => p.name))
     } catch (e) {
       console.error('Failed to fetch sort list:', e)
       sortOrderList.value = []
