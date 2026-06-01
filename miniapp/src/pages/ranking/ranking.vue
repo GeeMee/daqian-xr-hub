@@ -1,12 +1,17 @@
 <template>
   <view class="page">
-    <NavBar />
-    <view class="page-content" :style="{ paddingTop: navHeight + 'px' }">
-      <view class="header">
-        <text class="title">票房榜单</text>
-        <text class="date">{{ today }}</text>
+    <view class="hero" :style="{ paddingTop: statusBarHeight + 'px' }">
+      <view class="hero-content">
+        <view class="hero-badge">
+          <text class="hero-badge-icon">🏆</text>
+        </view>
+        <text class="hero-title">票房榜单</text>
+        <text class="hero-subtitle">当日实时热度排行</text>
+        <text class="hero-date">{{ today }}</text>
       </view>
+    </view>
 
+    <view class="list-wrap">
       <scroll-view class="rank-list" scroll-y :show-scrollbar="false">
         <view v-if="rankList.length === 0" class="empty-state">
           <text class="empty-text">暂无数据</text>
@@ -16,18 +21,16 @@
           :key="index"
           class="rank-item"
         >
-          <view class="rank-num" :class="{ top: index < 3 }">
+          <view class="rank-num" :class="'rank-' + (index < 3 ? index : 'normal')">
             <text class="rank-num-text">{{ index + 1 }}</text>
           </view>
-          <view class="rank-info">
-            <text class="rank-name">{{ item }}</text>
-            <view class="rank-bar-bg">
-              <view
-                class="rank-bar"
-                :class="'bar-' + Math.min(index, 4)"
-                :style="{ width: getBarWidth(index) + '%' }"
-              ></view>
-            </view>
+          <text class="rank-name">{{ item }}</text>
+          <view class="rank-bar-wrap">
+            <view
+              class="rank-bar"
+              :class="'bar-level-' + Math.min(index, 4)"
+              :style="{ width: getBarWidth(index) + '%' }"
+            ></view>
           </view>
         </view>
         <view class="footer-space"></view>
@@ -38,20 +41,18 @@
 
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
-import NavBar from '../../components/NavBar.vue'
 import { api } from '../../lib/api'
 
-const navHeight = ref(0)
+const statusBarHeight = ref(0)
 const rankList = ref<string[]>([])
 const today = ref('')
 
 onMounted(async () => {
   const systemInfo = uni.getSystemInfoSync()
-  const statusBarHeight = systemInfo.statusBarHeight || 0
-  navHeight.value = statusBarHeight + 44
+  statusBarHeight.value = systemInfo.statusBarHeight || 0
 
   const now = new Date()
-  today.value = `${now.getFullYear()}/${String(now.getMonth() + 1).padStart(2, '0')}/${String(now.getDate()).padStart(2, '0')}`
+  today.value = `${now.getFullYear()}年${now.getMonth() + 1}月${now.getDate()}日`
 
   try {
     rankList.value = await api.getSortList(0)
@@ -63,7 +64,7 @@ onMounted(async () => {
 function getBarWidth(index: number): number {
   const total = rankList.value.length
   if (total === 0) return 0
-  return Math.max(20, 100 - (index / total) * 80)
+  return Math.max(15, 100 - (index / total) * 85)
 }
 </script>
 
@@ -71,35 +72,92 @@ function getBarWidth(index: number): number {
 .page {
   min-height: 100vh;
   background-color: #f5f5f7;
-}
-
-.page-content {
-  height: 100vh;
   display: flex;
   flex-direction: column;
-  box-sizing: border-box;
 }
 
-.header {
-  padding: 32rpx 32rpx 24rpx;
+.hero {
+  background: linear-gradient(135deg, #065f46, #059669, #34d399);
+  position: relative;
+  overflow: hidden;
+}
+
+.hero::before {
+  content: '';
+  position: absolute;
+  top: -40rpx;
+  right: -40rpx;
+  width: 300rpx;
+  height: 300rpx;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.hero::after {
+  content: '';
+  position: absolute;
+  bottom: -60rpx;
+  left: -30rpx;
+  width: 200rpx;
+  height: 200rpx;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.hero-content {
+  position: relative;
+  z-index: 1;
   display: flex;
-  align-items: baseline;
-  justify-content: space-between;
+  flex-direction: column;
+  align-items: center;
+  padding: 48rpx 32rpx 56rpx;
 }
 
-.title {
-  font-size: 36rpx;
+.hero-badge {
+  width: 80rpx;
+  height: 80rpx;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.15);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 20rpx;
+}
+
+.hero-badge-icon {
+  font-size: 40rpx;
+}
+
+.hero-title {
+  font-size: 40rpx;
   font-weight: 700;
-  color: #1a1a1a;
+  color: #ffffff;
+  letter-spacing: 4rpx;
 }
 
-.date {
+.hero-subtitle {
+  margin-top: 12rpx;
   font-size: 24rpx;
-  color: #999;
+  color: rgba(255, 255, 255, 0.8);
+}
+
+.hero-date {
+  margin-top: 8rpx;
+  font-size: 22rpx;
+  color: rgba(255, 255, 255, 0.6);
+}
+
+.list-wrap {
+  flex: 1;
+  margin-top: -24rpx;
+  border-radius: 24rpx 24rpx 0 0;
+  background: #f5f5f7;
+  overflow: hidden;
+  padding-top: 24rpx;
 }
 
 .rank-list {
-  flex: 1;
+  height: 100%;
   padding: 0 24rpx;
   box-sizing: border-box;
 }
@@ -107,78 +165,97 @@ function getBarWidth(index: number): number {
 .rank-item {
   display: flex;
   align-items: center;
-  padding: 24rpx 16rpx;
+  padding: 24rpx 20rpx;
   background: #ffffff;
   border-radius: 12rpx;
-  margin-bottom: 12rpx;
+  margin-bottom: 10rpx;
 }
 
 .rank-num {
   flex-shrink: 0;
-  width: 48rpx;
-  height: 48rpx;
+  width: 44rpx;
+  height: 44rpx;
+  border-radius: 10rpx;
   display: flex;
   align-items: center;
   justify-content: center;
   margin-right: 20rpx;
+  background: #f0f0f2;
 }
 
 .rank-num-text {
-  font-size: 28rpx;
+  font-size: 24rpx;
   font-weight: 700;
   color: #999;
 }
 
-.rank-num.top .rank-num-text {
-  color: #f59e0b;
+.rank-0 {
+  background: linear-gradient(135deg, #f59e0b, #fbbf24);
 }
 
-.rank-info {
-  flex: 1;
-  overflow: hidden;
+.rank-0 .rank-num-text {
+  color: #ffffff;
+}
+
+.rank-1 {
+  background: linear-gradient(135deg, #9ca3af, #d1d5db);
+}
+
+.rank-1 .rank-num-text {
+  color: #ffffff;
+}
+
+.rank-2 {
+  background: linear-gradient(135deg, #b45309, #d97706);
+}
+
+.rank-2 .rank-num-text {
+  color: #ffffff;
 }
 
 .rank-name {
-  font-size: 28rpx;
+  flex-shrink: 0;
+  width: 240rpx;
+  font-size: 26rpx;
   font-weight: 500;
   color: #1a1a1a;
-  margin-bottom: 10rpx;
-  display: -webkit-box;
-  -webkit-box-orient: vertical;
-  -webkit-line-clamp: 1;
   overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
-.rank-bar-bg {
-  height: 16rpx;
+.rank-bar-wrap {
+  flex: 1;
+  height: 20rpx;
   background: #f0f0f2;
-  border-radius: 8rpx;
+  border-radius: 10rpx;
   overflow: hidden;
+  margin-left: 16rpx;
 }
 
 .rank-bar {
   height: 100%;
-  border-radius: 8rpx;
-  transition: width 0.3s ease;
+  border-radius: 10rpx;
+  transition: width 0.4s ease;
 }
 
-.bar-0 {
+.bar-level-0 {
   background: linear-gradient(90deg, #f59e0b, #fbbf24);
 }
 
-.bar-1 {
+.bar-level-1 {
   background: linear-gradient(90deg, #f97316, #fb923c);
 }
 
-.bar-2 {
+.bar-level-2 {
   background: linear-gradient(90deg, #ef4444, #f87171);
 }
 
-.bar-3 {
-  background: linear-gradient(90deg, #34d399, #6ee7b7);
+.bar-level-3 {
+  background: linear-gradient(90deg, #10b981, #34d399);
 }
 
-.bar-4 {
+.bar-level-4 {
   background: linear-gradient(90deg, #60a5fa, #93c5fd);
 }
 
