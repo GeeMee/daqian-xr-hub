@@ -19,15 +19,27 @@
         </swiper>
       </view>
 
-      <!-- 本月推荐 -->
-      <view v-if="homeData.recommendedProducts.length > 0" class="section recommend-section">
+      <!-- 推荐区域 -->
+      <view class="section recommend-section">
         <view class="section-header">
-          <text class="section-header-title">本月推荐</text>
+          <view class="section-tabs">
+            <text
+              class="section-tab"
+              :class="{ active: recommendTab === 'showing' }"
+              @click="recommendTab = 'showing'"
+            >热映推荐</text>
+            <text
+              class="section-tab"
+              :class="{ active: recommendTab === 'upcoming' }"
+              @click="recommendTab = 'upcoming'"
+            >待映推荐</text>
+          </view>
+          <text class="all-films-link" @click="goAllFilms">全部影片</text>
         </view>
         <scroll-view class="recommend-scroll" scroll-x :show-scrollbar="false">
           <view class="recommend-track">
             <view
-              v-for="(column, idx) in recommendColumns"
+              v-for="(column, idx) in activeRecommendColumns"
               :key="idx"
               class="recommend-column"
             >
@@ -84,11 +96,13 @@ import SectionTitle from '../../components/SectionTitle.vue'
 import { api } from '../../lib/api'
 
 const navHeight = ref(0)
+const recommendTab = ref<'showing' | 'upcoming'>('showing')
 const homeData = ref<{ banners: any[]; recommendedProducts: any[]; newProducts: any[] }>({
   banners: [],
   recommendedProducts: [],
   newProducts: [],
 })
+const upcomingRecommended = ref<any[]>([])
 
 const recommendColumns = computed(() => {
   const list = homeData.value.recommendedProducts
@@ -97,6 +111,19 @@ const recommendColumns = computed(() => {
     cols.push(list.slice(i, i + 3))
   }
   return cols
+})
+
+const upcomingColumns = computed(() => {
+  const list = upcomingRecommended.value
+  const cols: any[][] = []
+  for (let i = 0; i < list.length; i += 3) {
+    cols.push(list.slice(i, i + 3))
+  }
+  return cols
+})
+
+const activeRecommendColumns = computed(() => {
+  return recommendTab.value === 'showing' ? recommendColumns.value : upcomingColumns.value
 })
 
 onMounted(async () => {
@@ -114,10 +141,21 @@ onMounted(async () => {
   } catch (e) {
     console.error('Failed to load home data:', e)
   }
+
+  try {
+    const upcomingRes = await api.getUpcoming()
+    upcomingRecommended.value = upcomingRes.recommended
+  } catch (e) {
+    console.error('Failed to load upcoming:', e)
+  }
 })
 
 function goDetail(productId: string) {
   uni.navigateTo({ url: `/pages/detail/detail?id=${productId}` })
+}
+
+function goAllFilms() {
+  uni.switchTab({ url: '/pages/products/products' })
 }
 
 function stripHtml(html: string): string {
@@ -180,6 +218,47 @@ function getTagClass(tag: string): string {
   color: #1a1a1a;
 }
 
+.section-tabs {
+  display: flex;
+  gap: 32rpx;
+  align-items: center;
+}
+
+.section-tab {
+  font-size: 30rpx;
+  font-weight: 500;
+  color: #999;
+  position: relative;
+  padding-bottom: 14rpx;
+  line-height: 1;
+  transition: color 0.2s, font-weight 0.2s;
+}
+
+.section-tab.active {
+  font-size: 30rpx;
+  font-weight: 700;
+  color: #1a1a1a;
+}
+
+.section-tab.active::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 40rpx;
+  height: 5rpx;
+  border-radius: 2.5rpx;
+  background: linear-gradient(90deg, #34d399, #6ee7b7);
+}
+
+/* 全部影片链接 */
+.all-films-link {
+  font-size: 24rpx;
+  color: #666;
+  letter-spacing: 1rpx;
+}
+
 /* 本月推荐 - 3 行网格，超出向右滚动 */
 .recommend-section {
   padding: 0;
@@ -196,34 +275,34 @@ function getTagClass(tag: string): string {
 
 .recommend-track {
   display: inline-flex;
-  gap: 16rpx;
+  gap: 14rpx;
   padding: 0 24rpx 8rpx;
   align-items: flex-start;
 }
 
 .recommend-column {
   flex-shrink: 0;
-  width: 460rpx;
+  width: 440rpx;
   display: flex;
   flex-direction: column;
-  gap: 16rpx;
+  gap: 12rpx;
 }
 
 .recommend-card {
   width: 100%;
   display: flex;
   background: #ffffff;
-  border-radius: 16rpx;
+  border-radius: 12rpx;
   overflow: hidden;
-  box-shadow: 0 2rpx 12rpx rgba(0, 0, 0, 0.04);
+  box-shadow: 0 2rpx 8rpx rgba(0, 0, 0, 0.05);
   white-space: normal;
 }
 
 .recommend-cover {
   flex-shrink: 0;
-  width: 130rpx;
-  height: 170rpx;
-  background: #f5f5f7;
+  width: 120rpx;
+  height: 160rpx;
+  background: #f0f0f2;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -236,14 +315,15 @@ function getTagClass(tag: string): string {
 
 .recommend-info {
   flex: 1;
-  padding: 16rpx 20rpx;
+  padding: 14rpx 16rpx;
   display: flex;
   flex-direction: column;
+  justify-content: center;
   overflow: hidden;
 }
 
 .recommend-name {
-  font-size: 28rpx;
+  font-size: 26rpx;
   font-weight: 600;
   color: #1a1a1a;
   line-height: 1.4;
@@ -254,13 +334,13 @@ function getTagClass(tag: string): string {
 }
 
 .recommend-desc {
-  margin-top: 10rpx;
+  margin-top: 8rpx;
   font-size: 22rpx;
-  color: #666;
+  color: #888;
   line-height: 1.5;
   display: -webkit-box;
   -webkit-box-orient: vertical;
-  -webkit-line-clamp: 3;
+  -webkit-line-clamp: 2;
   overflow: hidden;
 }
 

@@ -41,16 +41,18 @@
 
       <!-- 产品图片 -->
       <view v-if="product.images && product.images.length > 0" class="images-section section-block">
-        <view class="images-list">
-          <image
-            v-for="(img, index) in product.images"
-            :key="index"
-            class="detail-image"
-            :src="img"
-            mode="widthFix"
-            @click="previewImage(index)"
-          />
-        </view>
+        <scroll-view class="images-scroll" scroll-x :show-scrollbar="false">
+          <view class="images-track">
+            <image
+              v-for="(img, index) in product.images"
+              :key="index"
+              class="detail-image"
+              :src="img"
+              mode="aspectFill"
+              @click="previewImage(index)"
+            />
+          </view>
+        </scroll-view>
       </view>
 
       <!-- 官方推荐 -->
@@ -255,15 +257,21 @@ function previewImage(index: number) {
   padding: 24rpx 0;
 }
 
-.images-list {
-  display: flex;
-  flex-direction: column;
+.images-scroll {
+  width: 100%;
+  white-space: nowrap;
+}
+
+.images-track {
+  display: inline-flex;
   gap: 16rpx;
 }
 
 .detail-image {
-  width: 100%;
+  width: 400rpx;
+  height: 300rpx;
   border-radius: 12rpx;
+  flex-shrink: 0;
 }
 
 /* 官方推荐 */
