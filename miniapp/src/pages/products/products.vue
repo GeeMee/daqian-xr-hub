@@ -284,12 +284,13 @@ function resetPanel() {
   }
 }
 
-function confirmPanel() {
+async function confirmPanel() {
   if (panelKey.value === 'category') {
     selectedCategory.value = tempSelected.value
   } else if (panelKey.value === 'sort') {
-    selectedSort.value = tempSelected.value
-    fetchSortList(tempSelected.value)
+    const sortKey = tempSelected.value
+    await fetchSortList(sortKey)
+    selectedSort.value = sortKey
   }
   closePanel()
 }
