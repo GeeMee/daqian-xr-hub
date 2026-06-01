@@ -130,17 +130,23 @@
             <view class="upcoming-section-title">
               <text class="upcoming-section-text">敬请期待</text>
             </view>
-            <view class="poster-grid">
+            <view class="upcoming-list">
               <view
                 v-for="product in upcomingAll"
                 :key="product.id"
-                class="poster-cell"
+                class="product-card"
                 @click="goDetail(product.id)"
               >
-                <view class="poster-cell-img">
-                  <image class="poster-img" :src="product.poster" mode="aspectFill" />
+                <view class="poster-wrap">
+                  <image class="poster" :src="product.poster" mode="aspectFill" />
                 </view>
-                <text class="poster-cell-name">{{ product.name }}</text>
+                <view class="card-body">
+                  <view class="card-main">
+                    <text class="card-name">{{ product.name }}</text>
+                    <text class="card-duration">时长：{{ product.duration }}</text>
+                    <text v-if="product.shortDesc" class="card-desc">{{ product.shortDesc }}</text>
+                  </view>
+                </view>
               </view>
             </view>
           </template>
@@ -596,6 +602,12 @@ function goDetail(productId: string) {
   padding-left: 16rpx;
   border-left: 6rpx solid #34d399;
   line-height: 1.2;
+}
+
+.upcoming-list {
+  display: flex;
+  flex-direction: column;
+  gap: 20rpx;
 }
 
 .poster-grid {
