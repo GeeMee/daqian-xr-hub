@@ -1,4 +1,4 @@
-const BASE_URL = import.meta.env.PROD ? 'http://8.153.73.225/api' : 'http://localhost:3000/api'
+const BASE_URL = import.meta.env.PROD ? '/api' : 'http://localhost:3000/api'
 
 function getToken() {
   return localStorage.getItem('token') || ''
@@ -70,20 +70,31 @@ export const api = {
     get: () => request<any>('/settings'),
     update: (data: any) => request<any>('/settings', { method: 'PUT', body: JSON.stringify(data) }),
   },
-  upload: async (file: File) => {
-    const formData = new FormData()
-    formData.append('file', file)
-    const token = getToken()
-    const headers: Record<string, string> = {}
-    if (token) headers['Authorization'] = `Bearer ${token}`
-    const res = await fetch(`${BASE_URL}/upload`, { method: 'POST', headers, body: formData })
-    if (res.status === 401) {
-      localStorage.removeItem('token')
-      localStorage.removeItem('username')
-      window.location.href = '/login'
-      throw new Error('未登录')
-    }
-    if (!res.ok) throw new Error('Upload failed')
-    return res.json() as Promise<{ url: string }>
+  upload: (file: File, onProgress?: (percent: number) => void) => {
+    return new Promise<{ url: string }>((resolve, reject) => {
+      const formData = new FormData()
+      formData.append('file', file)
+      const xhr = new XMLHttpRequest()
+      xhr.open('POST', `${BASE_URL}/upload`)
+      const token = getToken()
+      if (token) xhr.setRequestHeader('Authorization', `Bearer ${token}`)
+      xhr.upload.onprogress = (e) => {
+        if (e.lengthComputable) onProgress?.(Math.round((e.loaded / e.total) * 100))
+      }
+      xhr.onload = () => {
+        if (xhr.status === 401) {
+          localStorage.removeItem('token')
+          localStorage.removeItem('username')
+          window.location.href = '/login'
+          reject(new Error('未登录'))
+        } else if (xhr.status >= 200 && xhr.status < 300) {
+          resolve(JSON.parse(xhr.responseText))
+        } else {
+          reject(new Error('Upload failed'))
+        }
+      }
+      xhr.onerror = () => reject(new Error('Upload failed'))
+      xhr.send(formData)
+    })
   },
 }

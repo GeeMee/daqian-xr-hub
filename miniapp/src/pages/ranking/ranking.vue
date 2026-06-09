@@ -1,82 +1,122 @@
 <template>
   <view class="page">
-    <view class="hero" :style="{ paddingTop: statusBarHeight + 'px' }">
-      <view class="hero-content">
-        <text class="hero-title">票房榜单</text>
+    <view class="hero">
+      <image
+        v-if="heroReady"
+        class="hero-bg"
+        src="/static/figma-ranking/Bl6Xc2XtW7QOmaCppJdb3Z_2045_163.png"
+        mode="aspectFill"
+        lazy-load
+      />
+    </view>
+
+    <scroll-view class="rank-list" scroll-y :show-scrollbar="false" @scrolltolower="loadMoreRanks">
+      <view v-if="isRankingLoading" class="rank-skeleton-list">
+        <view v-for="item in 4" :key="item" class="rank-item skeleton-rank-item">
+          <view class="rank-badge skeleton-block"></view>
+          <view class="rank-poster skeleton-block"></view>
+          <view class="rank-info">
+            <view class="rank-skeleton-line skeleton-name skeleton-block"></view>
+            <view class="rank-skeleton-line skeleton-duration skeleton-block"></view>
+          </view>
+        </view>
       </view>
-    </view>
-
-    <view class="sub-header">
-      <text class="sub-header-text">按用户交易数据排序 · 每日更新</text>
-    </view>
-
-    <scroll-view class="rank-list" scroll-y :show-scrollbar="false">
-      <view v-if="rankedProducts.length === 0" class="empty-state">
+      <view v-else-if="rankedProducts.length === 0" class="empty-state">
         <text class="empty-text">暂无数据</text>
       </view>
+
       <view
-        v-for="(item, index) in rankedProducts"
-        :key="index"
-        class="rank-item"
+        v-for="(item, index) in visibleRankedProducts"
+        :key="item.id"
+        class="rank-item tap-feedback"
+        :class="{ 'first-ready': listReady }"
+        hover-class="tap-feedback-hover"
         @click="goDetail(item.id)"
       >
-        <view class="rank-badge" :class="'badge-' + (index < 3 ? index : 'normal')">
-          <text class="badge-text">{{ index + 1 }}</text>
+        <view class="rank-badge" :class="getBadgeClass(index)">
+          <text class="badge-text">{{ index < 3 ? `TOP ${index + 1}` : index + 1 }}</text>
         </view>
         <view class="rank-poster">
-          <image class="poster-img" :src="item.poster" mode="aspectFill" />
+          <image v-if="imageReadyCount > index" class="poster-img" :src="item.poster" mode="aspectFill" lazy-load />
+          <view v-else class="poster-img poster-placeholder"></view>
         </view>
         <view class="rank-info">
           <text class="rank-name">{{ item.name }}</text>
           <text class="rank-duration">时长：{{ item.duration }}</text>
           <text v-if="item.shortDesc" class="rank-desc">{{ item.shortDesc }}</text>
         </view>
-        <view class="detail-btn" @click.stop="goDetail(item.id)">
-          <text class="detail-btn-text">详情</text>
-        </view>
       </view>
+
       <view class="footer-space"></view>
     </scroll-view>
   </view>
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { api } from '../../lib/api'
 
-const statusBarHeight = ref(0)
 const rankedProducts = ref<any[]>([])
+const isRankingLoading = ref(true)
+const heroReady = ref(false)
+const listReady = ref(false)
+const imageReadyCount = ref(0)
+const RANK_BATCH_SIZE = 6
+const rankRenderCount = ref(RANK_BATCH_SIZE)
+
+const visibleRankedProducts = computed(() => rankedProducts.value.slice(0, rankRenderCount.value))
+
+function loadMoreRanks() {
+  if (rankRenderCount.value < rankedProducts.value.length) {
+    rankRenderCount.value += RANK_BATCH_SIZE
+    warmImagesOnce()
+  }
+}
+
+function buildRankedProducts(products: any[], sortList: string[]) {
+  const result: any[] = []
+  for (const name of sortList) {
+    const match = products.find(
+      (p: any) => p.name === name || p.name.includes(name) || name.includes(p.name)
+    )
+    if (match && !result.find((r) => r.id === match.id)) result.push(match)
+  }
+  return result
+}
+
+function warmImagesOnce() {
+  const target = visibleRankedProducts.value.length
+  for (let i = imageReadyCount.value; i < target; i++) {
+    setTimeout(() => {
+      if (imageReadyCount.value < i + 1) imageReadyCount.value = i + 1
+    }, 900 + i * 180)
+  }
+}
 
 onMounted(async () => {
-  const systemInfo = uni.getSystemInfoSync()
-  statusBarHeight.value = systemInfo.statusBarHeight || 0
-
   try {
-    const [sortList, prodRes] = await Promise.all([
-      api.getSortList(0),
-      api.getProducts({ status: 'on' }),
-    ])
+    const prodRes = await api.getProducts({ status: 'on' })
     const products = prodRes.data
-    const result: any[] = []
-    for (const name of sortList) {
-      const match = products.find(
-        (p: any) => p.name === name || p.name.includes(name) || name.includes(p.name)
-      )
-      if (match && !result.find((r) => r.id === match.id)) {
-        result.push(match)
-      }
-    }
-    // 添加未匹配到的产品到末尾
-    for (const p of products) {
-      if (!result.find((r) => r.id === p.id)) {
-        result.push(p)
-      }
-    }
-    rankedProducts.value = result
+    const sortList = await api.getSortList(0)
+    rankedProducts.value = buildRankedProducts(products, sortList)
+    rankRenderCount.value = RANK_BATCH_SIZE
+    isRankingLoading.value = false
+
+    setTimeout(() => { listReady.value = true }, 50)
+    setTimeout(() => { heroReady.value = true }, 700)
+    warmImagesOnce()
   } catch (e) {
-    // silently fail
+    console.error('Failed to load ranking:', e)
+    isRankingLoading.value = false
   }
 })
+
+function getBadgeClass(index: number) {
+  if (index === 0) return 'badge-gold'
+  if (index === 1) return 'badge-silver'
+  if (index === 2) return 'badge-bronze'
+  return 'badge-normal'
+}
 
 function goDetail(productId: string) {
   uni.navigateTo({ url: `/pages/detail/detail?id=${productId}` })
@@ -84,163 +124,121 @@ function goDetail(productId: string) {
 </script>
 
 <style scoped lang="scss">
+@keyframes ranking-first-fade {
+  from { opacity: 0.72; }
+  to { opacity: 1; }
+}
+
 .page {
   min-height: 100vh;
-  background-color: #ffffff;
+  background-color: #f7f9f8;
   display: flex;
   flex-direction: column;
 }
 
 .hero {
-  background: linear-gradient(180deg, #0f2e0f, #1a4a1a, #0f2e0f);
-  position: relative;
-}
-
-.hero-content {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 56rpx 32rpx 64rpx;
-}
-
-.hero-title {
-  font-size: 52rpx;
-  font-weight: 700;
-  color: #ffffff;
-  letter-spacing: 8rpx;
-}
-
-.sub-header {
-  background: #ffffff;
-  padding: 20rpx 32rpx;
-  border-bottom: 1rpx solid #f0f0f0;
-}
-
-.sub-header-text {
-  font-size: 22rpx;
-  color: #999;
-}
-
-.rank-list {
-  flex: 1;
-  padding: 0;
-  box-sizing: border-box;
-}
-
-.rank-item {
-  display: flex;
-  align-items: center;
-  padding: 24rpx 24rpx;
-  background: #ffffff;
-  border-bottom: 1rpx solid #f5f5f5;
-  position: relative;
-}
-
-.rank-badge {
-  position: absolute;
-  top: 24rpx;
-  left: 24rpx;
-  width: 40rpx;
-  height: 40rpx;
-  border-radius: 8rpx;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 2;
-}
-
-.badge-text {
-  font-size: 24rpx;
-  font-weight: 700;
-  color: #ffffff;
-}
-
-.badge-0 {
-  background: linear-gradient(135deg, #f59e0b, #fbbf24);
-}
-
-.badge-1 {
-  background: linear-gradient(135deg, #9ca3af, #d1d5db);
-}
-
-.badge-1 .badge-text {
-  color: #ffffff;
-}
-
-.badge-2 {
-  background: linear-gradient(135deg, #b45309, #d97706);
-}
-
-.badge-normal {
-  background: #e5e7eb;
-}
-
-.badge-normal .badge-text {
-  color: #666;
-}
-
-.rank-poster {
   flex-shrink: 0;
-  width: 180rpx;
-  height: 240rpx;
-  border-radius: 12rpx;
+  width: 100%;
+  height: 440rpx;
   overflow: hidden;
-  margin-right: 20rpx;
+  background: linear-gradient(180deg, #f5f7f6 0%, #eef1f0 100%);
 }
 
-.poster-img {
+.hero-bg {
   width: 100%;
   height: 100%;
 }
 
+.rank-list {
+  flex: 1;
+  height: 0;
+  background: #f7f9f8;
+}
+
+.rank-item {
+  width: 100%;
+  height: 176rpx;
+  display: flex;
+  align-items: center;
+  gap: 24rpx;
+  padding: 16rpx 48rpx;
+  box-sizing: border-box;
+  background: #ffffff;
+  border-bottom: 1rpx solid #dfe2e0;
+  opacity: 1;
+}
+
+.rank-item.first-ready {
+  animation: ranking-first-fade 0.22s ease-out both;
+}
+
+.rank-skeleton-list { width: 100%; }
+.skeleton-rank-item { pointer-events: none; }
+.rank-skeleton-line { border-radius: 999rpx; }
+.skeleton-name { width: 220rpx; height: 32rpx; }
+.skeleton-duration { width: 160rpx; height: 26rpx; margin-top: 18rpx; }
+
+.rank-badge {
+  flex-shrink: 0;
+  width: 96rpx;
+  height: 40rpx;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  border-radius: 16rpx;
+  overflow: hidden;
+  background: #ffffff;
+}
+.badge-gold { background: linear-gradient(135deg, #f59e0b 0%, #ffe54d 48%, #fbbf24 100%); }
+.badge-silver { background: linear-gradient(135deg, #b0cbda 0%, #d3d3d3 48%, #7e94b4 100%); }
+.badge-bronze { background: linear-gradient(135deg, #d08c39 0%, #e3a55f 48%, #b8752e 100%); }
+.badge-normal { background: #f7f9f8; }
+.badge-text {
+  font-size: 22rpx;
+  font-weight: 700;
+  color: #ffffff;
+  line-height: 40rpx;
+}
+.badge-normal .badge-text { color: #868e8b; }
+
+.rank-poster {
+  flex-shrink: 0;
+  width: 108rpx;
+  height: 144rpx;
+  border-radius: 12rpx;
+  overflow: hidden;
+  background: #eef1f0;
+}
+.poster-img { width: 100%; height: 100%; }
+.poster-placeholder { background: linear-gradient(135deg, #eef1f0 0%, #f7f9f8 100%); }
+
 .rank-info {
   flex: 1;
+  min-width: 0;
   display: flex;
   flex-direction: column;
+  justify-content: center;
+  gap: 8rpx;
   overflow: hidden;
-  padding-right: 16rpx;
 }
-
 .rank-name {
-  font-size: 30rpx;
-  font-weight: 600;
-  color: #1a1a1a;
-  line-height: 1.4;
-  display: -webkit-box;
-  -webkit-box-orient: vertical;
-  -webkit-line-clamp: 1;
+  font-size: 28rpx;
+  font-weight: 700;
+  color: #1a211e;
+  line-height: 34rpx;
   overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
-
-.rank-duration {
-  margin-top: 10rpx;
-  font-size: 26rpx;
-  color: #666;
-}
-
-.rank-desc {
-  margin-top: 8rpx;
+.rank-duration, .rank-desc {
   font-size: 24rpx;
-  color: #999;
-  line-height: 1.5;
-  display: -webkit-box;
-  -webkit-box-orient: vertical;
-  -webkit-line-clamp: 2;
+  line-height: 28rpx;
   overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
-
-.detail-btn {
-  flex-shrink: 0;
-  padding: 12rpx 28rpx;
-  background: #1a1a1a;
-  border-radius: 24rpx;
-}
-
-.detail-btn-text {
-  font-size: 24rpx;
-  color: #ffffff;
-  line-height: 1;
-}
+.rank-duration { color: #7c8481; }
+.rank-desc { color: #5f6563; }
 
 .empty-state {
   display: flex;
@@ -248,13 +246,6 @@ function goDetail(productId: string) {
   justify-content: center;
   height: 400rpx;
 }
-
-.empty-text {
-  font-size: 28rpx;
-  color: #999;
-}
-
-.footer-space {
-  height: 40rpx;
-}
+.empty-text { font-size: 28rpx; color: #868e8b; }
+.footer-space { height: calc(120rpx + env(safe-area-inset-bottom)); }
 </style>

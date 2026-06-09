@@ -1,0 +1,215 @@
+<title>Agent + Figma MCP 驱动小程序开发流程方法论</title>
+
+<callout emoji="💡" background-color="light-blue" border-color="blue">
+  <p>摘要：本文面向后续对外推广和团队复用，说明如何把 Mockup、Figma 原型、Figma MCP 与 AI Agent 结合起来，形成一套从设计到小程序交付的高效开发流程。重点不是某一个项目复盘，而是一套可复制、可讲解、可落地的方法论。</p>
+</callout>
+
+<h1>一、核心观点</h1>
+<p>传统小程序开发通常是“设计师交图 → 开发看图还原 → 反复截图对比 → 手工调样式”。这种方式依赖人工理解，容易出现尺寸、颜色、间距、图标、状态和交互动效的偏差。</p>
+<p>引入 Agent 和 Figma MCP 后，流程可以变成：</p>
+
+<blockquote>
+  <p>设计稿不只是图片，而是可以被 Agent 读取、解释、导出和转化为代码的结构化上下文。</p>
+</blockquote>
+
+<p>也就是说，Figma 从“视觉参考”变成了“开发输入源”；Agent 从“写代码工具”变成了“设计到代码的协作执行者”。</p>
+
+<h1>二、整体流程图</h1>
+
+<table>
+  <thead>
+    <tr><th background-color="light-gray">阶段</th><th background-color="light-gray">输入</th><th background-color="light-gray">Agent 做什么</th><th background-color="light-gray">产出</th></tr>
+  </thead>
+  <tbody>
+    <tr><td>1. 需求与 Mockup</td><td>业务需求、草图、参考产品</td><td>帮助整理页面结构、用户路径、信息架构</td><td>低保真 Mockup / 页面清单</td></tr>
+    <tr><td>2. Figma 原型设计</td><td>Mockup、品牌视觉、组件规范</td><td>辅助检查页面一致性、组件命名、资源结构</td><td>可交付 Figma 文件</td></tr>
+    <tr><td>3. Figma MCP 读取</td><td>Figma 文件 URL / 节点 ID</td><td>读取节点层级、尺寸、颜色、文本、图标和图片资源</td><td>设计到代码上下文</td></tr>
+    <tr><td>4. 小程序代码实现</td><td>Figma 上下文、项目代码</td><td>生成/修改页面、组件、样式、资源路径</td><td>可运行小程序页面</td></tr>
+    <tr><td>5. 本地测试与对比</td><td>微信开发者工具、截图、Figma 对比</td><td>根据截图反馈微调布局、图标、间距、交互</td><td>视觉接近设计稿的版本</td></tr>
+    <tr><td>6. 服务端联调</td><td>API、域名、HTTPS、CDN</td><td>检查接口、反代、合法域名、图片协议</td><td>可发布版本</td></tr>
+    <tr><td>7. 发布与沉淀</td><td>构建产物、发布检查</td><td>生成发布清单和项目知识记录</td><td>上线包与复用文档</td></tr>
+  </tbody>
+</table>
+
+<h1>三、第一阶段：从需求到 Mockup</h1>
+<p>Mockup 阶段不追求视觉精细，而是明确产品结构。Agent 适合在这个阶段帮助团队快速把想法整理成页面和模块。</p>
+
+<h2>Agent 可以辅助的问题</h2>
+<ul>
+  <li>这个小程序应该有哪些 tab？</li>
+  <li>首页应该承载哪些核心入口？</li>
+  <li>列表页、详情页、我的页分别需要哪些信息？</li>
+  <li>哪些页面需要空状态、加载态、错误态？</li>
+  <li>哪些数据来自后端，哪些可以本地配置？</li>
+</ul>
+
+<h2>推荐产出</h2>
+<ul>
+  <li>页面清单：Home、List、Ranking、Detail、Mine 等。</li>
+  <li>用户路径：打开小程序 → 浏览 → 点击详情 → 观看/购买/收藏。</li>
+  <li>组件清单：导航栏、卡片、筛选器、轮播图、tabbar、空状态。</li>
+  <li>数据清单：产品、分类、banner、排序、用户信息。</li>
+</ul>
+
+<callout emoji="✅" background-color="light-green" border-color="green">
+  <p>Mockup 阶段的关键不是画得多漂亮，而是让设计、开发、后端和业务对页面结构达成一致。</p>
+</callout>
+
+<h1>四、第二阶段：把 Mockup 变成 Figma 原型</h1>
+<p>Figma 阶段需要把低保真结构转化为可开发的高保真设计稿。为了让 Agent 更好读取 Figma，设计稿本身需要有一定规范。</p>
+
+<h2>设计文件建议规范</h2>
+<ul>
+  <li>页面 Frame 命名清晰，例如 Home Page、Products Page、Ranking Page。</li>
+  <li>组件命名清晰，例如 Product Card、Tab Bar、Filter Panel、Hero。</li>
+  <li>图标不要只叫 Vector，最好包一层 Icon Frame。</li>
+  <li>状态明确，例如 Default、Active、Disabled、Loading、Empty。</li>
+  <li>重要图片、背景、图标应可单独导出。</li>
+  <li>颜色、字号、间距尽量统一，避免同类组件使用多个近似值。</li>
+</ul>
+
+<h2>为什么这对 Agent 重要</h2>
+<p>Agent 通过 Figma MCP 读取的是节点结构、名称、样式和空间信息。如果设计稿命名混乱、资源散落、状态缺失，Agent 就需要更多人工解释；如果设计稿结构清楚，Agent 能更快完成页面还原。</p>
+
+<h1>五、第三阶段：Agent 通过 Figma MCP 读取设计</h1>
+<p>Figma MCP 的作用是让 Agent 不再只“看截图”，而是直接读取设计文件中的结构化信息。</p>
+
+<h2>常用能力</h2>
+<table>
+  <thead><tr><th background-color="light-gray">能力</th><th background-color="light-gray">用途</th></tr></thead>
+  <tbody>
+    <tr><td>解析 Figma URL</td><td>获取 fileKey 和 nodeId</td></tr>
+    <tr><td>查找节点名称</td><td>定位页面、组件、图标、按钮</td></tr>
+    <tr><td>提取文本</td><td>确认页面文案、标题、按钮文字</td></tr>
+    <tr><td>节点摘要</td><td>获取尺寸、布局、颜色、字体、层级</td></tr>
+    <tr><td>实现上下文</td><td>把设计参数转为开发提示</td></tr>
+    <tr><td>导出资源</td><td>导出图标、背景、图片、复杂视觉资产</td></tr>
+  </tbody>
+</table>
+
+<h2>典型工作方式</h2>
+<ol>
+  <li seq="auto">用户提供 Figma 链接或截图。</li>
+  <li seq="auto">Agent 解析 Figma URL，定位目标 Frame。</li>
+  <li seq="auto">Agent 获取节点 summary，确认页面宽高、色值、字号、间距。</li>
+  <li seq="auto">Agent 导出必要图标或背景资源。</li>
+  <li seq="auto">Agent 修改小程序页面和样式。</li>
+  <li seq="auto">用户在微信开发者工具截图反馈，Agent 再对比修正。</li>
+</ol>
+
+<callout emoji="⚠️" background-color="light-yellow" border-color="yellow">
+  <p>注意：截图适合判断视觉差异，Figma MCP 适合获取准确参数。不要只靠截图猜尺寸，也不要只靠参数忽略真实小程序渲染效果。两者结合效果最好。</p>
+</callout>
+
+<h1>六、第四阶段：Agent 编写小程序代码</h1>
+<p>Agent 可以直接在项目中读取文件、修改 Vue/TS/SCSS、替换静态资源、执行构建命令。小程序项目中，Agent 最适合做这些工作：</p>
+
+<ul>
+  <li>根据 Figma 调整页面结构和样式。</li>
+  <li>拆分或复用组件，例如 NavBar、ProductCard、SectionTitle。</li>
+  <li>替换 tabbar 图标、背景图、榜单 Hero 图等资源。</li>
+  <li>把接口地址从本地环境切换到正式 HTTPS 域名。</li>
+  <li>处理 loading、empty、error 等真实状态。</li>
+  <li>执行构建并读取错误日志。</li>
+</ul>
+
+<h2>代码生成的边界</h2>
+<p>Agent 不是一次性生成完整项目，而是更适合小步迭代：</p>
+<ul>
+  <li>一次只改一个页面或一个问题。</li>
+  <li>改完立刻构建。</li>
+  <li>用户用开发者工具截图反馈。</li>
+  <li>Agent 根据反馈再微调。</li>
+</ul>
+
+<h1>七、第五阶段：本地测试与视觉校验</h1>
+<p>小程序本地测试建议固定使用构建产物目录，而不是源码目录。</p>
+
+<pre lang="bash"><code>cd miniapp
+npm run build:mp-weixin</code></pre>
+
+<p>微信开发者工具导入：</p>
+<pre lang="text"><code>miniapp/dist/build/mp-weixin</code></pre>
+
+<h2>测试重点</h2>
+<table>
+  <thead><tr><th background-color="light-gray">类型</th><th background-color="light-gray">检查内容</th></tr></thead>
+  <tbody>
+    <tr><td>视觉</td><td>页面结构、tabbar、卡片、间距、颜色、图标大小</td></tr>
+    <tr><td>交互</td><td>tab 切换、筛选、点击详情、视频播放</td></tr>
+    <tr><td>数据</td><td>接口返回、空状态、排序数据、图片 URL</td></tr>
+    <tr><td>发布</td><td>关闭“不校验合法域名”后是否仍正常</td></tr>
+  </tbody>
+</table>
+
+<h1>八、第六阶段：服务端联调与发布验证</h1>
+<p>小程序发布不只看前端是否能跑，还要看服务端是否满足微信要求。</p>
+
+<h2>必须满足</h2>
+<ul>
+  <li>API 必须是 HTTPS。</li>
+  <li>request 合法域名必须配置到微信公众平台。</li>
+  <li>图片 CDN 必须是 HTTPS，并配置 downloadFile 合法域名。</li>
+  <li>后端接口不能依赖本地电脑或局域网地址。</li>
+  <li>正式环境不能请求 IP、HTTP 或 192.168 内网地址。</li>
+</ul>
+
+<h2>Agent 可以协助验证</h2>
+<pre lang="bash"><code>curl -I https://your-domain.com
+curl -sS https://your-domain.com/api/health
+curl -sS https://your-domain.com/api/products/home</code></pre>
+
+<p>如果图片显示异常，Agent 可以检查接口返回的图片协议是否为 HTTPS：</p>
+<pre lang="bash"><code>curl -sS https://your-domain.com/api/products/home | grep -o 'http://[^&quot;]*' | head</code></pre>
+
+<h1>九、开发中需要统一的口径</h1>
+<callout emoji="📌" background-color="light-yellow" border-color="yellow">
+  <p>除非明确说“本地测试”，否则所有小程序、后台和服务端都应按正式服务器地址取数据。不要把本地电脑 IP、局域网 IP、测试接口写进正式构建。</p>
+</callout>
+
+<table>
+  <thead><tr><th background-color="light-gray">场景</th><th background-color="light-gray">应该使用</th><th background-color="light-gray">不要使用</th></tr></thead>
+  <tbody>
+    <tr><td>小程序正式版</td><td>HTTPS 正式域名</td><td>localhost、IP、HTTP、192.168</td></tr>
+    <tr><td>管理后台线上</td><td>同域 /api</td><td>写死公网 IP</td></tr>
+    <tr><td>服务端代理</td><td>正式第三方接口</td><td>开发者本机接口</td></tr>
+    <tr><td>图片资源</td><td>HTTPS CDN</td><td>HTTP CDN</td></tr>
+  </tbody>
+</table>
+
+<h1>十、推荐对外推广话术</h1>
+<p>可以这样向客户或团队介绍这套流程：</p>
+
+<blockquote>
+  <p>我们不是简单用 AI 生成代码，而是把 Figma 设计稿接入 Agent，让 Agent 能读取页面结构、尺寸、颜色、组件和资源，再结合真实项目代码进行逐步实现。设计稿、代码、本地预览和服务器验证形成闭环，能显著减少设计还原偏差和沟通成本。</p>
+</blockquote>
+
+<h2>可以强调的价值</h2>
+<ul>
+  <li>设计到代码更快：Agent 能直接读取 Figma 信息，而不是靠人工量尺寸。</li>
+  <li>还原更准确：颜色、间距、字体、图标资源都可以从设计稿提取。</li>
+  <li>修改成本低：用户截图反馈后，Agent 可以快速定位代码并微调。</li>
+  <li>发布更完整：Agent 不只写页面，还能协助检查域名、HTTPS、CDN、接口。</li>
+  <li>知识可沉淀：每轮踩坑和流程都能写入文档，下一次不用重复探索。</li>
+</ul>
+
+<h1>十一、适合使用这套流程的项目</h1>
+<ul>
+  <li>微信小程序、uni-app 小程序。</li>
+  <li>有明确 Figma 设计稿的移动端项目。</li>
+  <li>需要快速从原型到可运行 Demo 的项目。</li>
+  <li>需要多人协作、反复视觉微调的项目。</li>
+  <li>需要同时处理前端、后端、域名、发布检查的小型产品。</li>
+</ul>
+
+<h1>十二、注意事项</h1>
+<ul>
+  <li>Figma 文件命名越规范，Agent 工作越准确。</li>
+  <li>复杂动画不要盲目生成，要结合小程序真实性能测试。</li>
+  <li>不要把测试接口、本地 IP 写进正式代码。</li>
+  <li>上线前必须关闭开发者工具的“不校验合法域名”进行验证。</li>
+  <li>图片、视频、API 都要检查 HTTPS 和微信合法域名配置。</li>
+</ul>
+
+<hr/>
+<p>更新时间：2026-06-04</p>

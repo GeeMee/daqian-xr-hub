@@ -1,0 +1,144 @@
+<title>ProductInfoApp 小程序从 Figma 到发布的 Agent 协作开发流程总结</title>
+
+<callout emoji="✅" background-color="light-green" border-color="green">
+  <p>摘要：本文总结本轮 ProductInfoApp 小程序从 Figma 原型还原、Agent 辅助开发、本地测试、服务器域名/HTTPS 配置，到微信小程序发布前验证的完整流程。目标是形成可复用 SOP，让后续迭代能按同一套节奏推进，减少反复踩坑。</p>
+</callout>
+
+<h1>一、项目背景与目标</h1>
+<p>本轮工作围绕 ProductInfoApp 小程序展开，核心目标包括：基于 Figma 设计稿还原小程序首页、产品列表、票房榜单、详情页和我的页面；优化视觉细节与基础交互动效；完成服务器二级域名反代和 HTTPS 配置；保证小程序正式发布时接口、图片 CDN 和合法域名均可用。</p>
+
+<table>
+  <thead><tr><th background-color="light-gray">项目项</th><th background-color="light-gray">结果</th></tr></thead>
+  <tbody>
+    <tr><td>小程序源码</td><td>D:/ForkProject/ProductInfoApp/miniapp</td></tr>
+    <tr><td>管理后台源码</td><td>D:/ForkProject/ProductInfoApp/admin</td></tr>
+    <tr><td>后端源码</td><td>D:/ForkProject/ProductInfoApp/server</td></tr>
+    <tr><td>正式 API 域名</td><td>https://daqianxr-admin.daqianmijing.com/api</td></tr>
+    <tr><td>CDN 域名</td><td>https://cdn.daqianmijing.com</td></tr>
+    <tr><td>服务器路径</td><td>/opt/daqian-xr-hub</td></tr>
+  </tbody>
+</table>
+
+<h1>二、Figma 原型与 Mockup 工作流</h1>
+<p>设计还原阶段优先从 Figma 中读取结构、节点、尺寸、颜色和资源，而不是凭截图主观猜测。Agent 使用 Figma 工具定位页面和组件，包括 Home Page、Products Page、Ranking Page、Detail Page、Mine Page、TabBar、Icon 等节点。</p>
+
+<ul>
+  <li>先用 Figma 节点搜索确认页面和目标组件，例如按文本、节点名、Icon 搜索。</li>
+  <li>再用节点 summary / implementation context 获取尺寸、间距、颜色、层级和可见文本。</li>
+  <li>需要真实资源时，使用 Figma render/export 导出 PNG，例如 tabbar 产品列表和票房榜单图标。</li>
+  <li>导出图标时需要注意 scale。tabbar 原图应统一为 22×22，避免 88×88 图标被原生 tabbar 缩放后产生视觉不一致。</li>
+</ul>
+
+<callout emoji="⚠️" background-color="light-yellow" border-color="yellow">
+  <p>关键经验：Figma 图标资源不是只看外观，还要检查画布尺寸、透明边距和视觉边界。一次错误导出 scale=4 造成产品列表/票房榜单图标为 88×88，而首页/我的是 22×22，导致原生 tabbar 看起来文字和图标不和谐。</p>
+</callout>
+
+<h1>三、Agent 参与开发的方式</h1>
+<p>本轮 Agent 主要承担四类角色：设计读取、代码修改、构建验证、部署指导。高风险操作采用逐步确认，尤其是服务器 nginx、证书、pm2 重启等。</p>
+
+<ol>
+  <li seq="auto">设计读取：从 Figma 获取页面结构、导出图标与图片资源。</li>
+  <li seq="auto">代码实现：修改 Vue/uni-app 页面、tabbar 资源、API 地址、后端路由。</li>
+  <li seq="auto">本地验证：每次关键修改后运行 npm run build:mp-weixin、admin build、server build。</li>
+  <li seq="auto">线上部署：通过 SSH 指导用户一步一步配置 nginx、HTTPS、pm2 和服务器环境变量。</li>
+  <li seq="auto">问题诊断：结合截图、curl、nslookup、接口返回内容判断问题来源。</li>
+</ol>
+
+<h1>四、小程序本地开发与测试流程</h1>
+<p>本地小程序开发以 uni-app 构建微信小程序产物为准。构建命令如下：</p>
+<pre lang="bash"><code>cd D:/ForkProject/ProductInfoApp/miniapp
+npm run build:mp-weixin</code></pre>
+<p>构建产物目录：</p>
+<pre lang="text"><code>D:/ForkProject/ProductInfoApp/miniapp/dist/build/mp-weixin</code></pre>
+<p>微信开发者工具应打开上述构建产物目录。正式发布前建议关闭“不校验合法域名、web-view、TLS 版本以及 HTTPS 证书”，以模拟真实发布环境。</p>
+
+<table>
+  <thead><tr><th background-color="light-gray">检查项</th><th background-color="light-gray">期望结果</th></tr></thead>
+  <tbody>
+    <tr><td>首页</td><td>banner、推荐、近期上新正常显示</td></tr>
+    <tr><td>产品页</td><td>列表图、筛选面板、详情跳转正常</td></tr>
+    <tr><td>榜单页</td><td>排序接口无数据时显示暂无数据</td></tr>
+    <tr><td>详情页</td><td>产品图片、视频入口、文本内容正常</td></tr>
+    <tr><td>合法域名</td><td>关闭调试后无 request/downloadFile 报错</td></tr>
+  </tbody>
+</table>
+
+<h1>五、动效与性能经验</h1>
+<p>本轮尝试过多种列表入场动画、图片延迟加载和重复进入动画。最终结论是：产品页和榜单页这类远程图片列表不适合做复杂列表级动效。</p>
+
+<ul>
+  <li>不要用 v-if 控制 image 或图片父级列表，否则会销毁节点，导致图片反复加载。</li>
+  <li>不要在 tab 页面 onShow 时强制重播整个列表动画，会造成整体闪动、上移或停顿。</li>
+  <li>不要再引入全局 cache、prefetch、productCache 等模块；此前尝试导致微信运行白屏。</li>
+  <li>保留安全动效：点击反馈、筛选面板下滑、选项 stagger 弹出、选中项高亮。</li>
+  <li>排行页以稳定为主，不做整体上浮、整体淡入或重复进入动画。</li>
+</ul>
+
+<callout emoji="💡" background-color="light-blue" border-color="blue">
+  <p>推荐策略：列表页做稳定呈现，交互动效只放在用户主动触发的小范围区域，例如筛选面板、按钮、卡片点击反馈。详情页和首页可做少量局部淡入，但不要做大面积 stagger。</p>
+</callout>
+
+<h1>六、服务端域名、HTTPS 与反代流程</h1>
+<p>本轮最终使用已备案域名 daqianxr-admin.daqianmijing.com。原 daqianxr-admin.daqianxr.com 因 ICP 备案拦截，公网访问返回 403 Non-compliance ICP Filing，无法申请证书。</p>
+
+<table>
+  <thead><tr><th background-color="light-gray">服务</th><th background-color="light-gray">配置</th></tr></thead>
+  <tbody>
+    <tr><td>公网 IP</td><td>8.153.73.225</td></tr>
+    <tr><td>正式域名</td><td>daqianxr-admin.daqianmijing.com</td></tr>
+    <tr><td>后端进程</td><td>Node/Express，pm2 名称 daqian-xr，端口 3000</td></tr>
+    <tr><td>管理后台静态目录</td><td>/opt/daqian-xr-hub/admin-dist</td></tr>
+    <tr><td>API 反代</td><td>/api → http://127.0.0.1:3000</td></tr>
+    <tr><td>uploads 反代</td><td>/uploads → http://127.0.0.1:3000</td></tr>
+  </tbody>
+</table>
+
+<p>HTTPS 使用 certbot 申请。nginx 插件方式在未备案域名上失败，备案域名使用 webroot 方式成功，再通过 certbot --nginx 部署证书。</p>
+<pre lang="bash"><code>certbot certonly --webroot -w /opt/daqian-xr-hub/admin-dist -d daqianxr-admin.daqianmijing.com --register-unsafely-without-email --agree-tos
+certbot --nginx -d daqianxr-admin.daqianmijing.com --redirect</code></pre>
+
+<h1>七、服务端验证命令</h1>
+<p>每次部署后用 curl 验证，而不是只看浏览器。</p>
+<pre lang="bash"><code>curl -I https://daqianxr-admin.daqianmijing.com
+curl -sS https://daqianxr-admin.daqianmijing.com/api/health
+curl -sS https://daqianxr-admin.daqianmijing.com/api/categories
+curl -sS https://daqianxr-admin.daqianmijing.com/api/products/home</code></pre>
+
+<p>图片协议验证：</p>
+<pre lang="bash"><code>curl -sS https://daqianxr-admin.daqianmijing.com/api/products/home | grep -o 'https://cdn.daqianmijing.com[^&quot;]*' | head
+curl -sS https://daqianxr-admin.daqianmijing.com/api/products/home | grep -o 'http://cdn.daqianmijing.com[^&quot;]*' | head</code></pre>
+
+<h1>八、线上 API 与 CDN 口径</h1>
+<p>统一口径：除非明确说“本地测试”，否则小程序、后台、服务端都按服务器正式地址取数据。</p>
+
+<ul>
+  <li>小程序正式 API：<code>https://daqianxr-admin.daqianmijing.com/api</code></li>
+  <li>管理后台线上 API：使用同域 <code>/api</code></li>
+  <li>图片 CDN：<code>https://cdn.daqianmijing.com</code></li>
+  <li>正式排序接口：<code>https://webapi.beyondthegame.fun/api/miniprogram/getcpsortlist</code></li>
+</ul>
+
+<callout emoji="⚠️" background-color="light-yellow" border-color="yellow">
+  <p>数据库里旧图片曾存为 http://cdn.daqianmijing.com。仅修改 .env 的 CDN_BASE_URL 只影响未来上传，不会修改旧数据。本轮在后端返回层做了 URL normalize，把旧 http CDN 自动转换成 https CDN，避免小程序关闭合法域名校验后图片丢失。</p>
+</callout>
+
+<h1>九、小程序发布前检查清单</h1>
+<checkbox done="true">request 合法域名配置：<code>https://daqianxr-admin.daqianmijing.com</code></checkbox>
+<checkbox done="true">downloadFile 合法域名配置：<code>https://cdn.daqianmijing.com</code></checkbox>
+<checkbox done="true">接口返回图片已为 HTTPS</checkbox>
+<checkbox done="true">关闭“不校验合法域名”后页面可正常加载</checkbox>
+<checkbox done="true">后端 health、categories、products/home 接口正常</checkbox>
+<checkbox done="false">正式排序接口当前暂未返回数据，榜单页应显示暂无数据</checkbox>
+
+<h1>十、推荐的后续标准流程</h1>
+<ol>
+  <li seq="auto">先在 Figma 中确认页面和资源，不凭截图猜测。</li>
+  <li seq="auto">Agent 修改代码后必须本地构建验证。</li>
+  <li seq="auto">涉及服务端变更时，先上传代码，再 npm run build，再 pm2 restart --update-env。</li>
+  <li seq="auto">用 curl 验证 HTTPS 页面、API、图片协议。</li>
+  <li seq="auto">微信开发者工具关闭域名校验绕过选项，确认正式环境可访问。</li>
+  <li seq="auto">确认无问题后再上传小程序版本并提交审核。</li>
+</ol>
+
+<hr/>
+<p>更新时间：2026-06-04</p>

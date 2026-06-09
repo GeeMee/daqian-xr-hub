@@ -1,6 +1,6 @@
 <template>
   <view class="page">
-    <NavBar />
+    <NavBar variant="light" :show-logo="false" />
     <view class="page-content" :style="{ paddingTop: navHeight + 'px' }">
       <!-- 顶部 Tab：正在热映 / 即将上映 -->
       <view class="top-tabs">
@@ -30,32 +30,43 @@
             :class="{ active: panelKey === 'category' }"
             @click="openPanel('category')"
           >
-            <text class="filter-text">分类</text>
-            <text class="filter-arrow" :class="{ up: panelKey === 'category' }">▼</text>
+            <text class="filter-text">{{ selectedCategoryLabel }}</text>
+            <text class="filter-arrow" :class="{ up: panelKey === 'category' }"></text>
           </view>
           <view
             class="filter-trigger"
             :class="{ active: panelKey === 'sort' }"
             @click="openPanel('sort')"
           >
-            <text class="filter-text">排序</text>
-            <text class="filter-arrow" :class="{ up: panelKey === 'sort' }">▼</text>
+            <text class="filter-text">{{ selectedSortLabel }}</text>
+            <text class="filter-arrow" :class="{ up: panelKey === 'sort' }"></text>
           </view>
         </view>
 
         <view class="content-area">
-          <scroll-view class="product-list" scroll-y :show-scrollbar="false">
-            <view v-if="filteredProducts.length === 0" class="empty-state">
+          <scroll-view class="product-list" scroll-y :show-scrollbar="false" @scrolltolower="loadMoreShowing">
+            <view v-if="isShowingLoading" class="product-skeleton-list">
+              <view v-for="item in 3" :key="item" class="product-card skeleton-card">
+                <view class="poster-wrap skeleton-block"></view>
+                <view class="card-body">
+                  <view class="skeleton-line skeleton-title skeleton-block"></view>
+                  <view class="skeleton-line skeleton-short skeleton-block"></view>
+                  <view class="skeleton-line skeleton-long skeleton-block"></view>
+                </view>
+              </view>
+            </view>
+            <view v-else-if="filteredProducts.length === 0" class="empty-state">
               <text class="empty-text">暂无产品</text>
             </view>
             <view
-              v-for="product in filteredProducts"
+              v-for="(product, index) in visibleProducts"
               :key="product.id"
-              class="product-card"
+              class="product-card tap-feedback"
+              hover-class="tap-feedback-hover"
               @click="goDetail(product.id)"
             >
               <view class="poster-wrap">
-                <image class="poster" :src="product.poster" mode="aspectFill" />
+                <image class="poster" :src="product.poster" mode="aspectFill" lazy-load />
               </view>
               <view class="card-body">
                 <view class="card-main">
@@ -63,7 +74,7 @@
                   <text class="card-duration">时长：{{ product.duration }}</text>
                   <text v-if="product.shortDesc" class="card-desc">{{ product.shortDesc }}</text>
                 </view>
-                <view class="buy-btn" @click.stop="goDetail(product.id)">
+                <view class="buy-btn tap-feedback" hover-class="tap-feedback-hover" @click.stop="goDetail(product.id)">
                   <text class="buy-btn-text">详情</text>
                 </view>
               </view>
@@ -74,23 +85,16 @@
           <!-- 筛选面板 -->
           <view v-if="panelKey" class="panel-mask" @click="closePanel">
             <view class="panel" @click.stop>
-              <view class="panel-options">
+              <view class="panel-options" :class="panelKey === 'category' ? 'category-options' : 'sort-options'">
                 <view
-                  v-for="opt in panelOptions"
+                  v-for="(opt, index) in panelOptions"
                   :key="opt.id"
                   class="panel-option"
-                  :class="{ active: tempSelected === opt.id }"
-                  @click="tempSelected = opt.id"
+                  :class="[getPanelDelayClass(index), { active: currentPanelValue === opt.id }]"
+                  @click="selectPanelOption(opt.id)"
                 >
                   <text class="panel-option-text">{{ opt.name }}</text>
-                </view>
-              </view>
-              <view class="panel-actions">
-                <view class="panel-btn reset" @click="resetPanel">
-                  <text class="panel-btn-text reset-text">重置</text>
-                </view>
-                <view class="panel-btn confirm" @click="confirmPanel">
-                  <text class="panel-btn-text confirm-text">确定</text>
+                  <text v-if="panelKey === 'sort' && opt.id !== 'default'" class="panel-option-arrow"></text>
                 </view>
               </view>
             </view>
@@ -100,8 +104,18 @@
 
       <!-- 即将上映 -->
       <view v-else class="upcoming-area">
-        <scroll-view class="upcoming-scroll" scroll-y :show-scrollbar="false">
-          <view v-if="upcomingAll.length === 0" class="empty-state">
+        <scroll-view class="upcoming-scroll" scroll-y :show-scrollbar="false" @scrolltolower="loadMoreUpcoming">
+          <view v-if="upcomingLoading" class="product-skeleton-list upcoming-skeleton-list">
+            <view v-for="item in 3" :key="item" class="product-card skeleton-card">
+              <view class="poster-wrap skeleton-block"></view>
+              <view class="card-body">
+                <view class="skeleton-line skeleton-title skeleton-block"></view>
+                <view class="skeleton-line skeleton-short skeleton-block"></view>
+                <view class="skeleton-line skeleton-long skeleton-block"></view>
+              </view>
+            </view>
+          </view>
+          <view v-else-if="upcomingAll.length === 0" class="empty-state">
             <text class="empty-text">敬请期待</text>
           </view>
 
@@ -111,19 +125,22 @@
               <view class="upcoming-section-title">
                 <text class="upcoming-section-text">推荐</text>
               </view>
-              <view class="poster-grid">
-                <view
-                  v-for="product in upcomingRecommended"
-                  :key="product.id"
-                  class="poster-cell"
-                  @click="goDetail(product.id)"
-                >
-                  <view class="poster-cell-img">
-                    <image class="poster-img" :src="product.poster" mode="aspectFill" />
+              <scroll-view class="recommended-scroll" scroll-x :show-scrollbar="false">
+                <view class="recommended-track">
+                  <view
+                    v-for="(product, index) in upcomingRecommended"
+                    :key="product.id"
+                    class="poster-cell tap-feedback"
+                    hover-class="tap-feedback-hover"
+                    @click="goDetail(product.id)"
+                  >
+                    <view class="poster-cell-img">
+                      <image class="poster-img" :src="product.poster" mode="aspectFill" lazy-load />
+                    </view>
+                    <text class="poster-cell-name">{{ product.name }}</text>
                   </view>
-                  <text class="poster-cell-name">{{ product.name }}</text>
                 </view>
-              </view>
+              </scroll-view>
             </block>
 
             <!-- 敬请期待栏 -->
@@ -132,13 +149,14 @@
             </view>
             <view class="upcoming-list">
               <view
-                v-for="product in upcomingAll"
+                v-for="(product, index) in visibleUpcomingAll"
                 :key="product.id"
-                class="product-card"
+                class="product-card tap-feedback"
+                hover-class="tap-feedback-hover"
                 @click="goDetail(product.id)"
               >
                 <view class="poster-wrap">
-                  <image class="poster" :src="product.poster" mode="aspectFill" />
+                  <image class="poster" :src="product.poster" mode="aspectFill" lazy-load />
                 </view>
                 <view class="card-body">
                   <view class="card-main">
@@ -172,19 +190,33 @@ const categories = ref<any[]>([])
 const products = ref<any[]>([])
 const upcomingRecommended = ref<any[]>([])
 const upcomingAll = ref<any[]>([])
+const upcomingLoaded = ref(false)
+const upcomingLoading = ref(false)
+const isShowingLoading = ref(true)
 
 const selectedCategory = ref<string>('all')
 const selectedSort = ref<string>('default')
 const sortOrderList = ref<string[]>([])
 
 const panelKey = ref<PanelKey>('')
-const tempSelected = ref<string>('')
+const PAGE_BATCH_SIZE = 6
+const showingRenderCount = ref(PAGE_BATCH_SIZE)
+const upcomingRenderCount = ref(PAGE_BATCH_SIZE)
 
 const sortOptions = [
-  { id: 'default', name: '默认' },
+  { id: 'default', name: '综合排序' },
   { id: 'monthly', name: '当月最热' },
   { id: 'daily', name: '当日最热' },
 ]
+
+const selectedCategoryLabel = computed(() => {
+  if (selectedCategory.value === 'all') return '全部类型'
+  return categories.value.find((item) => item.id === selectedCategory.value)?.name || '全部类型'
+})
+
+const selectedSortLabel = computed(() => {
+  return sortOptions.find((item) => item.id === selectedSort.value)?.name || '综合排序'
+})
 
 const panelOptions = computed(() => {
   if (panelKey.value === 'category') {
@@ -194,6 +226,12 @@ const panelOptions = computed(() => {
     return sortOptions
   }
   return []
+})
+
+const currentPanelValue = computed(() => {
+  if (panelKey.value === 'category') return selectedCategory.value
+  if (panelKey.value === 'sort') return selectedSort.value
+  return ''
 })
 
 const filteredProducts = computed(() => {
@@ -213,6 +251,29 @@ const filteredProducts = computed(() => {
   }
   return sorted
 })
+
+const visibleProducts = computed(() => filteredProducts.value.slice(0, showingRenderCount.value))
+const visibleUpcomingAll = computed(() => upcomingAll.value.slice(0, upcomingRenderCount.value))
+
+function loadMoreShowing() {
+  if (showingRenderCount.value < filteredProducts.value.length) {
+    showingRenderCount.value += PAGE_BATCH_SIZE
+  }
+}
+
+function loadMoreUpcoming() {
+  if (upcomingRenderCount.value < upcomingAll.value.length) {
+    upcomingRenderCount.value += PAGE_BATCH_SIZE
+  }
+}
+
+function resetShowingRenderCount() {
+  showingRenderCount.value = PAGE_BATCH_SIZE
+}
+
+function resetUpcomingRenderCount() {
+  upcomingRenderCount.value = PAGE_BATCH_SIZE
+}
 
 function getSortIndex(productName: string): number {
   // 优先精确匹配
@@ -244,23 +305,38 @@ onMounted(async () => {
     ])
     categories.value = catRes.data
     products.value = prodRes.data
+    resetShowingRenderCount()
   } catch (e) {
     console.error('Failed to load showing products:', e)
+  } finally {
+    isShowingLoading.value = false
   }
+})
 
-  // 即将上映接口可能尚未部署，单独捕获避免影响正在热映
+async function loadUpcomingOnce() {
+  if (upcomingLoaded.value || upcomingLoading.value) return
+  upcomingLoading.value = true
   try {
     const upcomingRes = await api.getUpcoming()
     upcomingRecommended.value = upcomingRes.recommended
     upcomingAll.value = upcomingRes.all
+    upcomingLoaded.value = true
+    resetUpcomingRenderCount()
   } catch (e) {
     console.error('Failed to load upcoming products:', e)
+  } finally {
+    upcomingLoading.value = false
   }
-})
+}
 
 function switchTab(key: TabKey) {
   currentTab.value = key
   closePanel()
+  if (key === 'upcoming') {
+    if (!upcomingLoaded.value) {
+      loadUpcomingOnce()
+    }
+  }
 }
 
 function openPanel(key: 'category' | 'sort') {
@@ -269,28 +345,20 @@ function openPanel(key: 'category' | 'sort') {
     return
   }
   panelKey.value = key
-  tempSelected.value = key === 'category' ? selectedCategory.value : selectedSort.value
 }
 
 function closePanel() {
   panelKey.value = ''
 }
 
-function resetPanel() {
+async function selectPanelOption(id: string) {
   if (panelKey.value === 'category') {
-    tempSelected.value = 'all'
+    selectedCategory.value = id
+    resetShowingRenderCount()
   } else if (panelKey.value === 'sort') {
-    tempSelected.value = 'default'
-  }
-}
-
-async function confirmPanel() {
-  if (panelKey.value === 'category') {
-    selectedCategory.value = tempSelected.value
-  } else if (panelKey.value === 'sort') {
-    const sortKey = tempSelected.value
-    await fetchSortList(sortKey)
-    selectedSort.value = sortKey
+    await fetchSortList(id)
+    selectedSort.value = id
+    resetShowingRenderCount()
   }
   closePanel()
 }
@@ -308,15 +376,63 @@ async function fetchSortList(sortKey: string) {
   }
 }
 
+function getPanelDelayClass(index: number) {
+  return `panel-delay-${Math.min(index, 8)}`
+}
+
 function goDetail(productId: string) {
   uni.navigateTo({ url: `/pages/detail/detail?id=${productId}` })
 }
 </script>
 
 <style scoped lang="scss">
+@keyframes product-fade-up {
+  0% {
+    opacity: 0.18;
+    transform: translateY(34rpx);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes product-fade-in {
+  0% { opacity: 0; }
+  100% { opacity: 1; }
+}
+
+@keyframes filter-panel-down {
+  0% {
+    opacity: 0;
+    transform: translateY(-28rpx) scaleY(0.96);
+    transform-origin: top center;
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scaleY(1);
+    transform-origin: top center;
+  }
+}
+
+@keyframes filter-option-pop {
+  0% {
+    opacity: 0;
+    transform: translateY(18rpx) scale(0.94);
+  }
+  70% {
+    opacity: 1;
+    transform: translateY(-2rpx) scale(1.015);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
 .page {
   min-height: 100vh;
-  background-color: #f5f5f7;
+  background-color: #f7f9f8;
 }
 
 .page-content {
@@ -324,108 +440,182 @@ function goDetail(productId: string) {
   display: flex;
   flex-direction: column;
   box-sizing: border-box;
+  background: #f7f9f8;
 }
 
-/* 顶部 Tab */
+/* Figma: 二级 Tab Bar 375×53，白底，底部留 12px */
 .top-tabs {
   display: flex;
+  flex-shrink: 0;
+  height: 106rpx;
   background: #ffffff;
-  padding: 24rpx 0;
+  padding: 0 0 24rpx;
+  box-sizing: border-box;
+  border-bottom: 1rpx solid #eef1f0;
+  animation: product-fade-in 0.28s ease-out both;
 }
 
 .top-tab {
   flex: 1;
   position: relative;
   display: flex;
+  flex-direction: column;
   align-items: center;
-  justify-content: center;
-  height: 60rpx;
+  justify-content: flex-start;
+  gap: 8rpx;
+  padding-top: 32rpx;
+  box-sizing: border-box;
 }
 
 .top-tab-text {
-  font-size: 32rpx;
-  color: #999;
+  font-size: 30rpx;
+  line-height: 36rpx;
+  color: #868e8b;
+  font-weight: 400;
 }
 
 .top-tab.active .top-tab-text {
-  color: #1a1a1a;
+  color: #1a211e;
   font-weight: 700;
-  font-size: 34rpx;
 }
 
 .top-tab-underline {
-  position: absolute;
-  bottom: -4rpx;
-  left: 50%;
-  transform: translateX(-50%);
   width: 80rpx;
   height: 6rpx;
   border-radius: 3rpx;
-  background: linear-gradient(90deg, #5eead4, #34d399);
+  background: linear-gradient(90deg, #12a594 0%, #75d2c5 100%);
 }
 
-/* 筛选栏 */
+/* Figma: Filter Bar 375×52，白底，左对齐两枚“综合排序”样式胶囊 */
 .filter-bar {
+  flex-shrink: 0;
   display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 24rpx;
+  height: 104rpx;
+  padding: 24rpx 48rpx;
+  box-sizing: border-box;
   background: #ffffff;
-  padding: 24rpx 24rpx;
-  border-top: 1rpx solid #f0f0f0;
+  animation: product-fade-in 0.28s ease-out 0.04s both;
 }
 
 .filter-trigger {
-  flex: 1;
-  display: flex;
+  min-width: 200rpx;
+  height: 64rpx;
+  display: inline-flex;
+  flex: 0 0 auto;
   align-items: center;
   justify-content: center;
-  gap: 8rpx;
+  gap: 10rpx;
+  padding: 0 32rpx;
+  box-sizing: border-box;
+  background: #eef1f0;
+  border-radius: 32rpx;
+  transition: background-color 0.18s ease-out, transform 0.16s ease-out;
+}
+
+.filter-trigger:active {
+  transform: scale(0.96);
+}
+
+.filter-trigger.active {
+  background: #e3f5f1;
 }
 
 .filter-text {
-  font-size: 28rpx;
-  color: #1a1a1a;
+  font-size: 26rpx;
+  line-height: 32rpx;
+  color: #1a211e;
+  transition: color 0.18s ease-out, font-weight 0.18s ease-out;
 }
 
 .filter-arrow {
-  font-size: 18rpx;
-  color: #1a1a1a;
-  transition: transform 0.2s;
+  width: 0;
+  height: 0;
+  border-left: 7rpx solid transparent;
+  border-right: 7rpx solid transparent;
+  border-top: 9rpx solid #1a211e;
+  transition: transform 0.22s cubic-bezier(0.2, 0.8, 0.2, 1), border-top-color 0.18s ease-out;
 }
 
 .filter-arrow.up {
   transform: rotate(180deg);
-  color: #34d399;
+  border-top-color: #12a594;
 }
 
 .filter-trigger.active .filter-text {
-  color: #34d399;
+  color: #12a594;
 }
 
 /* 内容区 */
-.content-area {
+.content-area,
+.upcoming-area {
   flex: 1;
   position: relative;
   overflow: hidden;
+  background: #f7f9f8;
 }
 
 .product-list {
   height: 100%;
-  padding: 20rpx 24rpx;
+  padding: 32rpx 32rpx 0;
   box-sizing: border-box;
 }
 
 .product-card {
   display: flex;
+  align-items: center;
+  min-height: 208rpx;
+  padding: 24rpx;
+  box-sizing: border-box;
   background: #ffffff;
   border-radius: 16rpx;
-  overflow: hidden;
   margin-bottom: 20rpx;
   box-shadow: 0 2rpx 12rpx rgba(0, 0, 0, 0.04);
 }
 
+.product-skeleton-list {
+  width: 100%;
+}
+
+.upcoming-skeleton-list {
+  padding: 32rpx 32rpx 0;
+  box-sizing: border-box;
+}
+
+.skeleton-card {
+  pointer-events: none;
+}
+
+.skeleton-line {
+  border-radius: 999rpx;
+}
+
+.skeleton-title {
+  width: 180rpx;
+  height: 32rpx;
+}
+
+.skeleton-short {
+  width: 140rpx;
+  height: 24rpx;
+  margin-top: 18rpx;
+}
+
+.skeleton-long {
+  width: 260rpx;
+  height: 24rpx;
+  margin-top: 16rpx;
+}
+
 .poster-wrap {
   flex-shrink: 0;
-  width: 180rpx;
-  height: 240rpx;
+  width: 120rpx;
+  height: 160rpx;
+  border-radius: 12rpx;
+  overflow: hidden;
+  background: #eef1f0;
 }
 
 .poster {
@@ -435,27 +625,27 @@ function goDetail(productId: string) {
 
 .card-body {
   flex: 1;
+  min-width: 0;
   display: flex;
   align-items: center;
-  padding: 20rpx 20rpx 20rpx 24rpx;
+  padding-left: 24rpx;
   overflow: hidden;
 }
 
 .card-main {
   flex: 1;
+  min-width: 0;
   display: flex;
   flex-direction: column;
-  align-self: stretch;
-  justify-content: flex-start;
+  justify-content: center;
   overflow: hidden;
-  padding-right: 16rpx;
 }
 
 .card-name {
   font-size: 30rpx;
-  font-weight: 600;
-  color: #1a1a1a;
-  line-height: 1.4;
+  font-weight: 700;
+  color: #1a211e;
+  line-height: 36rpx;
   display: -webkit-box;
   -webkit-box-orient: vertical;
   -webkit-line-clamp: 1;
@@ -463,56 +653,31 @@ function goDetail(productId: string) {
 }
 
 .card-duration {
-  margin-top: 10rpx;
+  margin-top: 8rpx;
   font-size: 24rpx;
-  color: #666;
+  color: #868e8b;
+  line-height: 34rpx;
 }
 
 .card-desc {
-  margin-top: 10rpx;
-  font-size: 22rpx;
-  color: #999;
-  line-height: 1.5;
+  margin-top: 8rpx;
+  font-size: 24rpx;
+  color: #5f6563;
+  line-height: 34rpx;
   display: -webkit-box;
   -webkit-box-orient: vertical;
   -webkit-line-clamp: 2;
   overflow: hidden;
 }
 
-.tag-list {
-  margin-top: 12rpx;
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8rpx;
-}
-
-.tag-item {
-  padding: 4rpx 12rpx;
-  font-size: 20rpx;
-  color: #666;
-  background: #f5f5f7;
-  border-radius: 6rpx;
-}
-
+/* Figma 列表页没有详情按钮，隐藏但保留结构避免影响逻辑 */
 .buy-btn {
-  flex-shrink: 0;
-  width: 120rpx;
-  height: 44rpx;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: #1a1a1a;
-  border-radius: 22rpx;
+  display: none;
 }
 
-.buy-btn-text {
-  font-size: 22rpx;
-  color: #ffffff;
-  line-height: 1;
-  text-align: center;
-}
-
-.product-list ::-webkit-scrollbar {
+.product-list ::-webkit-scrollbar,
+.upcoming-scroll ::-webkit-scrollbar,
+.recommended-scroll ::-webkit-scrollbar {
   display: none;
   width: 0;
   height: 0;
@@ -529,140 +694,183 @@ function goDetail(productId: string) {
 
 .empty-text {
   font-size: 28rpx;
-  color: #999;
+  color: #868e8b;
 }
 
 .footer-space {
-  height: 40rpx;
+  height: calc(120rpx + env(safe-area-inset-bottom));
 }
 
-/* 筛选面板 */
+/* 筛选下拉面板：全部类型=自由换行胶囊，综合排序=居中竖向胶囊 */
 .panel-mask {
   position: absolute;
   left: 0;
   right: 0;
   top: 0;
   bottom: 0;
-  background: rgba(0, 0, 0, 0.4);
+  background: rgba(0, 0, 0, 0.22);
   z-index: 100;
+  animation: product-fade-in 0.16s ease-out both;
 }
 
 .panel {
-  background: #ffffff;
-  padding: 16rpx 0 32rpx;
+  width: 100%;
+  background: #eef1f0;
+  padding: 24rpx 56rpx 32rpx;
+  box-sizing: border-box;
+  border-radius: 0 0 24rpx 24rpx;
+  box-shadow: 0 16rpx 40rpx rgba(26, 33, 30, 0.08);
+  animation: filter-panel-down 0.22s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+  will-change: transform, opacity;
 }
 
-.panel-options {
+.panel-options.category-options {
+  display: flex;
+  flex-direction: row;
+  align-items: flex-start;
+  justify-content: flex-start;
+  flex-wrap: wrap;
+  gap: 20rpx 16rpx;
+}
+
+.category-options .panel-option {
+  height: 64rpx;
+  min-width: 104rpx;
   padding: 0 32rpx;
+  border-radius: 32rpx;
+}
+
+.panel-options.sort-options {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 20rpx;
 }
 
 .panel-option {
-  padding: 28rpx 0;
-  border-bottom: 1rpx solid #f0f0f0;
+  height: 64rpx;
+  min-width: 104rpx;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8rpx;
+  padding: 0 32rpx;
+  box-sizing: border-box;
+  background: #ffffff;
+  border-radius: 32rpx;
+  transition: background-color 0.18s ease-out, transform 0.16s ease-out, box-shadow 0.18s ease-out;
+  animation: filter-option-pop 0.34s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+  will-change: transform, opacity;
 }
 
-.panel-option:last-child {
-  border-bottom: none;
+.panel-option:active {
+  transform: scale(0.96);
+}
+
+.panel-option.active {
+  background: #e0f6f1;
+  box-shadow: 0 4rpx 12rpx rgba(18, 165, 148, 0.12);
+}
+
+.panel-delay-0 { animation-delay: 0s; }
+.panel-delay-1 { animation-delay: 0.12s; }
+.panel-delay-2 { animation-delay: 0.24s; }
+.panel-delay-3 { animation-delay: 0.36s; }
+.panel-delay-4 { animation-delay: 0.48s; }
+.panel-delay-5 { animation-delay: 0.60s; }
+.panel-delay-6 { animation-delay: 0.72s; }
+.panel-delay-7 { animation-delay: 0.84s; }
+.panel-delay-8 { animation-delay: 0.96s; }
+
+.sort-options .panel-option {
+  width: 638rpx;
+  height: 80rpx;
+  border-radius: 32rpx;
 }
 
 .panel-option-text {
-  font-size: 28rpx;
-  color: #1a1a1a;
+  font-size: 26rpx;
+  line-height: 32rpx;
+  color: #1a211e;
 }
 
 .panel-option.active .panel-option-text {
-  color: #34d399;
-  font-weight: 600;
+  color: #12a594;
+  font-weight: 500;
 }
 
-.panel-actions {
-  display: flex;
-  gap: 24rpx;
-  padding: 24rpx 32rpx 0;
+.panel-option-arrow {
+  width: 0;
+  height: 0;
+  border-left: 6rpx solid transparent;
+  border-right: 6rpx solid transparent;
+  border-top: 8rpx solid currentColor;
+  color: #1a211e;
 }
 
-.panel-btn {
-  flex: 1;
-  height: 80rpx;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 40rpx;
-}
-
-.panel-btn.reset {
-  background: #ffffff;
-  border: 2rpx solid #d0d0d0;
-}
-
-.panel-btn.confirm {
-  background: linear-gradient(90deg, #5eead4, #34d399);
-}
-
-.panel-btn-text {
-  font-size: 28rpx;
-}
-
-.reset-text {
-  color: #1a1a1a;
-}
-
-.confirm-text {
-  color: #ffffff;
-  font-weight: 600;
-}
-
-/* 即将上映 */
-.upcoming-area {
-  flex: 1;
-  overflow: hidden;
-}
-
+/* 即将上映：Figma Content padding 16px 左右、顶部 4px */
 .upcoming-scroll {
   height: 100%;
-  padding: 8rpx 24rpx 0;
+  padding: 8rpx 32rpx 0;
   box-sizing: border-box;
 }
 
 .upcoming-section-title {
   display: flex;
   align-items: center;
-  padding: 24rpx 0 16rpx;
+  height: 92rpx;
+  padding: 32rpx 0 24rpx;
+  box-sizing: border-box;
 }
 
 .upcoming-section-text {
+  position: relative;
+  padding-left: 22rpx;
   font-size: 30rpx;
   font-weight: 700;
-  color: #1a1a1a;
-  padding-left: 16rpx;
-  border-left: 6rpx solid #34d399;
-  line-height: 1.2;
+  color: #1a211e;
+  line-height: 36rpx;
 }
 
-.upcoming-list {
-  display: flex;
-  flex-direction: column;
-  gap: 20rpx;
+.upcoming-section-text::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 50%;
+  width: 6rpx;
+  height: 32rpx;
+  transform: translateY(-50%);
+  border-radius: 4rpx;
+  background: #12a594;
 }
 
-.poster-grid {
-  display: flex;
-  flex-wrap: wrap;
+.recommended-scroll {
+  width: 100%;
+  white-space: nowrap;
+}
+
+.recommended-track {
+  display: inline-flex;
   gap: 20rpx;
+  padding: 8rpx 0;
+  height: 314rpx;
+  box-sizing: border-box;
 }
 
 .poster-cell {
-  width: calc((100% - 40rpx) / 3);
+  flex-shrink: 0;
+  width: 200rpx;
   display: flex;
   flex-direction: column;
+  align-items: center;
 }
 
 .poster-cell-img {
-  width: 100%;
-  height: 280rpx;
+  width: 200rpx;
+  height: 260rpx;
   border-radius: 12rpx;
   overflow: hidden;
-  background: #f0f0f0;
+  background: #eef1f0;
 }
 
 .poster-img {
@@ -671,13 +879,20 @@ function goDetail(productId: string) {
 }
 
 .poster-cell-name {
+  width: 100%;
   margin-top: 12rpx;
-  font-size: 24rpx;
-  color: #1a1a1a;
-  line-height: 1.3;
+  font-size: 22rpx;
+  color: #5f6563;
+  line-height: 26rpx;
+  text-align: center;
   display: -webkit-box;
   -webkit-box-orient: vertical;
   -webkit-line-clamp: 1;
   overflow: hidden;
+}
+
+.upcoming-list {
+  display: flex;
+  flex-direction: column;
 }
 </style>

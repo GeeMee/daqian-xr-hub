@@ -1,11 +1,13 @@
 <template>
   <view class="page">
-    <NavBar />
+    <NavBar title="我的" variant="light" :show-logo="false" />
     <view class="page-content" :style="{ paddingTop: navHeight + 'px' }">
-      <view class="mine-placeholder">
-        <text class="placeholder-icon">👤</text>
-        <text class="placeholder-text">个人中心</text>
-        <text class="placeholder-sub">功能开发中，敬请期待</text>
+      <view class="placeholder">
+        <image
+          class="placeholder-image"
+          src="/static/figma-mine/Bl6Xc2XtW7QOmaCppJdb3Z_2049_898.png"
+          mode="aspectFit"
+        />
       </view>
     </view>
   </view>
@@ -27,35 +29,27 @@ onMounted(() => {
 <style scoped lang="scss">
 .page {
   min-height: 100vh;
-  background-color: #f5f5f7;
+  background: #ffffff;
 }
 
 .page-content {
+  min-height: 100vh;
+  box-sizing: border-box;
+  background: #ffffff;
+}
+
+/* Figma: Placeholder 375×490, center, padding top/bottom 120px */
+.placeholder {
+  height: 980rpx;
   display: flex;
   align-items: center;
   justify-content: center;
-  min-height: calc(100vh - 200rpx);
+  padding: 240rpx 48rpx;
+  box-sizing: border-box;
 }
 
-.mine-placeholder {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 16rpx;
-}
-
-.placeholder-icon {
-  font-size: 80rpx;
-}
-
-.placeholder-text {
-  font-size: 32rpx;
-  font-weight: 600;
-  color: #1a1a1a;
-}
-
-.placeholder-sub {
-  font-size: 24rpx;
-  color: #999;
+.placeholder-image {
+  width: 426rpx;
+  height: 500rpx;
 }
 </style>

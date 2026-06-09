@@ -3,6 +3,31 @@ import prisma from '../db'
 
 export const productsRouter = Router()
 
+function normalizeCdnUrl(url: string | null | undefined) {
+  if (!url) return url || ''
+  return url.replace(/^http:\/\/cdn\.daqianmijing\.com/i, 'https://cdn.daqianmijing.com')
+}
+
+function normalizeProduct(product: any) {
+  if (!product) return product
+  return {
+    ...product,
+    poster: normalizeCdnUrl(product.poster),
+    video: normalizeCdnUrl(product.video),
+    images: typeof product.images === 'string'
+      ? product.images.replace(/http:\/\/cdn\.daqianmijing\.com/gi, 'https://cdn.daqianmijing.com')
+      : product.images,
+  }
+}
+
+function normalizeBanner(banner: any) {
+  if (!banner) return banner
+  return {
+    ...banner,
+    image: normalizeCdnUrl(banner.image),
+  }
+}
+
 productsRouter.get('/', async (req, res) => {
   const { category, search, status, page = '1', pageSize = '20' } = req.query
   const where: any = {}
@@ -21,7 +46,7 @@ productsRouter.get('/', async (req, res) => {
   })
 
   const formatted = products.map((p) => ({
-    ...p,
+    ...normalizeProduct(p),
     recommendations: JSON.parse(p.recommendations),
     categoryName: p.category.name,
   }))
@@ -50,16 +75,16 @@ productsRouter.get('/home', async (_req, res) => {
   res.json({
     banners: banners.map((b) => ({
       id: b.id,
-      image: b.image,
+      image: normalizeCdnUrl(b.image),
       productId: b.productId,
       productName: b.product.name,
     })),
     recommended: recommended.map((p) => ({
-      ...p,
+      ...normalizeProduct(p),
       recommendations: JSON.parse(p.recommendations),
     })),
     recent: recent.map((p) => ({
-      ...p,
+      ...normalizeProduct(p),
       recommendations: JSON.parse(p.recommendations),
     })),
   })
@@ -71,7 +96,7 @@ productsRouter.get('/upcoming', async (_req, res) => {
     orderBy: { sortOrder: 'asc' },
   })
   const formatted = all.map((p) => ({
-    ...p,
+    ...normalizeProduct(p),
     recommendations: JSON.parse(p.recommendations),
   }))
   res.json({
@@ -80,16 +105,47 @@ productsRouter.get('/upcoming', async (_req, res) => {
   })
 })
 
+productsRouter.get('/sort-list', async (req, res) => {
+  const type = Number(req.query.type || 0) === 1 ? 1 : 0
+  const sortApiUrl = process.env.SORT_API_URL
+
+  if (!sortApiUrl) {
+    return res.json({ data: [] })
+  }
+
+  try {
+    const resp = await fetch(sortApiUrl, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ type }),
+      signal: AbortSignal.timeout(5000),
+    })
+
+    if (!resp.ok) {
+      return res.json({ data: [] })
+    }
+
+    const json = await resp.json() as { state?: string; data?: string }
+    if (json.state === 'ok' && json.data) {
+      return res.json({ data: JSON.parse(json.data) })
+    }
+    return res.json({ data: [] })
+  } catch (_e) {
+    return res.json({ data: [] })
+  }
+})
+
 productsRouter.get('/:id', async (req, res) => {
   const product = await prisma.product.findUnique({
     where: { id: req.params.id },
     include: { category: true },
   })
   if (!product) return res.status(404).json({ error: 'Not found' })
+  const normalizedProduct = normalizeProduct(product)
   res.json({
-    ...product,
+    ...normalizedProduct,
     recommendations: JSON.parse(product.recommendations),
-    images: JSON.parse(product.images || '[]'),
+    images: JSON.parse((normalizedProduct.images as string) || '[]'),
     categoryName: product.category.name,
   })
 })

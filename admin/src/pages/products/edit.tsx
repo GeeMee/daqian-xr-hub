@@ -16,6 +16,7 @@ export function ProductEditPage() {
   const [activeTab, setActiveTab] = useState(0)
   const [loading, setLoading] = useState(true)
   const [uploading, setUploading] = useState('')
+  const [videoProgress, setVideoProgress] = useState(0)
   const [form, setForm] = useState({
     name: '',
     categoryId: '',
@@ -72,6 +73,8 @@ export function ProductEditPage() {
   }, [id])
 
   const update = (key: string, value: unknown) => setForm({ ...form, [key]: value })
+
+  const isEscapeRoom = categories.find((c) => c.id === form.categoryId)?.name?.includes('密室') ?? false
 
   const addRecommendation = () => {
     setForm({ ...form, recommendations: [...form.recommendations, { icon: '✨', text: '' }] })
@@ -175,26 +178,40 @@ export function ProductEditPage() {
                     const file = e.target.files?.[0]
                     if (file) {
                       setUploading('video')
+                      setVideoProgress(0)
                       try {
-                        const { url } = await api.upload(file)
+                        const { url } = await api.upload(file, (percent) => setVideoProgress(percent))
                         update('video', url)
                       } catch { alert('视频上传失败') }
                       setUploading('')
+                      setVideoProgress(0)
                     }
                   }} />
                 </label>
-                {uploading === 'video' && <span className="text-xs text-blue-500 animate-pulse">正在上传视频，请稍候...</span>}
+                {uploading === 'video' && (
+                  <div className="flex-1 min-w-[160px]">
+                    <div className="flex items-center justify-between mb-1">
+                      <span className="text-xs text-blue-500">{videoProgress < 100 ? '正在上传视频...' : '上传完成，处理中...'}</span>
+                      <span className="text-xs text-gray-500 font-mono">{videoProgress}%</span>
+                    </div>
+                    <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
+                      <div className="h-full bg-blue-500 rounded-full transition-all duration-200" style={{ width: `${videoProgress}%` }} />
+                    </div>
+                  </div>
+                )}
               </div>
               <p className="text-xs text-gray-400 mt-1">支持 mp4 格式，建议不超过 200MB</p>
             </Field>
             <Field label="一句话推荐语">
               <input value={form.shortDesc} onChange={(e) => update('shortDesc', e.target.value)} placeholder="最多20字" maxLength={20} className="input" />
             </Field>
-            <Field label="恐怖指数">
-              <select value={form.horrorLevel} onChange={(e) => update('horrorLevel', Number(e.target.value))} className="input">
-                {[1, 2, 3, 4, 5].map((n) => <option key={n} value={n}>{'★'.repeat(n)}</option>)}
-              </select>
-            </Field>
+            {isEscapeRoom && (
+              <Field label="恐怖指数">
+                <select value={form.horrorLevel} onChange={(e) => update('horrorLevel', Number(e.target.value))} className="input">
+                  {[1, 2, 3, 4, 5].map((n) => <option key={n} value={n}>{'★'.repeat(n)}</option>)}
+                </select>
+              </Field>
+            )}
             <Field label="适合人数">
               <input value={form.playerCount} onChange={(e) => update('playerCount', e.target.value)} placeholder="例如：4-6人" className="input" />
             </Field>

@@ -1,0 +1,288 @@
+<title>Agent 与 Figma MCP 结合的小程序开发流程规范</title>
+
+<callout emoji="📌" background-color="light-gray" border-color="gray">
+  <p>本文用于规范基于 Mockup、Figma 原型、Figma MCP 与 Agent 协同的小程序开发流程。适用于需要从设计稿快速推进到可测试、可部署、可发布版本的移动端/小程序项目。</p>
+</callout>
+
+<h1>1. 文档目的</h1>
+<p>本流程用于解决小程序开发中的三个常见问题：设计还原依赖人工判断、前后端联调缺少统一检查、发布前环境问题暴露较晚。通过将 Figma 设计稿结构化接入 Agent，并把代码修改、测试验证、服务端检查纳入同一流程，形成一套可复用的交付方法。</p>
+
+<table>
+  <thead><tr><th background-color="light-gray">目标</th><th background-color="light-gray">说明</th></tr></thead>
+  <tbody>
+    <tr><td>提高设计还原效率</td><td>通过 Figma MCP 读取页面结构、尺寸、颜色、字体、资源，减少人工量稿。</td></tr>
+    <tr><td>降低沟通成本</td><td>设计、开发、测试、后端围绕同一套页面清单、接口清单、验收标准协作。</td></tr>
+    <tr><td>提升发布确定性</td><td>将合法域名、HTTPS、CDN、API、图片协议等发布前问题提前验证。</td></tr>
+    <tr><td>形成可复用资产</td><td>将流程、命令、检查项、问题处理方式沉淀为团队 SOP。</td></tr>
+  </tbody>
+</table>
+
+<h1>2. 适用范围</h1>
+<ul>
+  <li>微信小程序、uni-app 小程序、轻量 H5、小型移动端应用。</li>
+  <li>已有或计划使用 Figma 作为设计协作工具的项目。</li>
+  <li>需要 Agent 参与页面还原、组件开发、接口联调、构建验证和部署检查的项目。</li>
+  <li>适合 1–5 人小团队，也适合设计、前端、后端、测试分工明确的团队。</li>
+</ul>
+
+<h1>3. 角色与职责</h1>
+<table>
+  <thead><tr><th background-color="light-gray">角色</th><th background-color="light-gray">主要职责</th><th background-color="light-gray">与 Agent 的协作方式</th></tr></thead>
+  <tbody>
+    <tr><td>产品/业务负责人</td><td>明确业务目标、页面范围、关键路径和验收标准。</td><td>让 Agent 生成页面清单、流程草案、验收项。</td></tr>
+    <tr><td>设计师</td><td>输出 Mockup、高保真 Figma、组件状态和资源。</td><td>让 Agent 检查命名、组件结构、缺失状态和资源导出点。</td></tr>
+    <tr><td>前端开发</td><td>实现小程序页面、组件、状态和交互。</td><td>让 Agent 读取 Figma MCP 上下文并修改代码、执行构建。</td></tr>
+    <tr><td>后端开发</td><td>提供 API、鉴权、上传、图片/CDN、排序/业务接口。</td><td>让 Agent 检查接口返回、环境变量、反代和错误兜底。</td></tr>
+    <tr><td>测试/验收人员</td><td>验证功能、视觉、数据、兼容性和发布环境。</td><td>提供截图、日志和复现步骤，由 Agent 协助定位问题。</td></tr>
+    <tr><td>运维/部署人员</td><td>配置域名、HTTPS、nginx、进程守护、服务器目录。</td><td>让 Agent 生成分步命令并通过 curl 验证结果。</td></tr>
+  </tbody>
+</table>
+
+<h1>4. 总体流程</h1>
+<whiteboard type="mermaid">
+flowchart TD
+    A[业务需求确认] --> B[页面清单与信息架构]
+    B --> C[低保真 Mockup]
+    C --> D[Figma 高保真设计]
+    D --> E[Figma 文件规范化]
+    E --> F[Agent 通过 Figma MCP 读取设计]
+    F --> G[小程序页面与组件实现]
+    G --> H[本地构建与开发者工具预览]
+    H --> I{视觉/功能是否通过?}
+    I -- 否 --> J[截图反馈与问题定位]
+    J --> F
+    I -- 是 --> K[API 联调与服务端验证]
+    K --> L{正式环境是否通过?}
+    L -- 否 --> M[域名/HTTPS/CDN/API 修复]
+    M --> K
+    L -- 是 --> N[发布前检查]
+    N --> O[上传版本与提交审核]
+    O --> P[复盘与流程沉淀]
+</whiteboard>
+
+<h1>5. 阶段一：需求与 Mockup</h1>
+<p>Mockup 阶段用于明确页面范围和信息结构，不追求视觉精度。此阶段输出越清楚，后续 Figma 与开发越稳定。</p>
+
+<h2>5.1 输入</h2>
+<ul>
+  <li>业务目标和用户场景。</li>
+  <li>页面范围，例如首页、列表页、详情页、我的页、榜单页。</li>
+  <li>核心数据对象，例如产品、分类、banner、用户、订单、配置项。</li>
+  <li>关键操作路径，例如浏览、筛选、详情、播放、收藏、提交。</li>
+</ul>
+
+<h2>5.2 输出</h2>
+<table>
+  <thead><tr><th background-color="light-gray">交付物</th><th background-color="light-gray">内容要求</th></tr></thead>
+  <tbody>
+    <tr><td>页面清单</td><td>列出所有页面、入口、跳转关系。</td></tr>
+    <tr><td>信息架构</td><td>明确每个页面展示哪些信息，哪些是必填、可选或动态数据。</td></tr>
+    <tr><td>状态清单</td><td>包含 loading、empty、error、权限不足、无网络等状态。</td></tr>
+    <tr><td>接口初稿</td><td>列出页面需要的 API、字段和数据来源。</td></tr>
+  </tbody>
+</table>
+
+<h1>6. 阶段二：Figma 设计规范</h1>
+<p>Figma 文件需要满足 Agent 可读取、开发可还原、测试可对照三个条件。</p>
+
+<h2>6.1 命名规范</h2>
+<ul>
+  <li>页面 Frame 使用稳定命名，例如 Home Page、Products Page、Detail Page。</li>
+  <li>组件命名反映用途，例如 Product Card、Filter Panel、Tab Bar。</li>
+  <li>图标资源尽量包在 Icon Frame 中，避免只保留 Vector。</li>
+  <li>变体命名清晰，例如 Default、Active、Disabled、Loading。</li>
+</ul>
+
+<h2>6.2 资源规范</h2>
+<ul>
+  <li>需要导出的图片、图标、背景应单独成组或成 Frame。</li>
+  <li>同类图标应统一画布尺寸、线宽、视觉中心和透明边距。</li>
+  <li>tabbar 图标尤其需要统一尺寸，避免不同资源被小程序原生 tabbar 缩放后视觉不一致。</li>
+  <li>复杂背景可导出为图片，普通色块和渐变优先用 CSS 实现。</li>
+</ul>
+
+<h2>6.3 状态规范</h2>
+<ul>
+  <li>列表页应包含空状态和加载状态。</li>
+  <li>筛选、tab、按钮应包含选中态和默认态。</li>
+  <li>详情页应包含无数据、图片加载失败、视频不可用等异常状态。</li>
+</ul>
+
+<h1>7. 阶段三：Agent 与 Figma MCP 的使用方式</h1>
+<p>Agent 使用 Figma MCP 时，应先定位目标节点，再读取实现上下文，最后根据项目代码进行修改。不要直接根据截图猜测完整布局。</p>
+
+<h2>7.1 推荐步骤</h2>
+<ol>
+  <li seq="auto">解析 Figma URL，获取 fileKey 和 nodeId。</li>
+  <li seq="auto">通过节点名称或文本查找目标页面和组件。</li>
+  <li seq="auto">读取节点 summary，确认尺寸、层级、颜色、字体和间距。</li>
+  <li seq="auto">必要时导出图标、背景图、复杂视觉资源。</li>
+  <li seq="auto">将设计参数映射到小程序组件、样式和静态资源。</li>
+  <li seq="auto">构建并通过微信开发者工具截图反馈进行微调。</li>
+</ol>
+
+<h2>7.2 适合 Agent 处理的任务</h2>
+<table>
+  <thead><tr><th background-color="light-gray">任务</th><th background-color="light-gray">说明</th></tr></thead>
+  <tbody>
+    <tr><td>页面还原</td><td>根据 Figma 调整布局、颜色、字号、间距。</td></tr>
+    <tr><td>组件抽象</td><td>提取 NavBar、Card、SectionTitle、TabBar 等复用组件。</td></tr>
+    <tr><td>资源替换</td><td>从 Figma 导出图标、背景、图片并替换项目资源。</td></tr>
+    <tr><td>接口适配</td><td>调整 API 地址、字段映射、状态处理。</td></tr>
+    <tr><td>构建验证</td><td>执行 npm build，读取报错并修复。</td></tr>
+    <tr><td>部署检查</td><td>辅助检查 nginx、HTTPS、合法域名、CDN 协议。</td></tr>
+  </tbody>
+</table>
+
+<h1>8. 阶段四：前端实现流程</h1>
+<p>前端开发应小步提交、小步验证。每次修改应有明确目标，例如只调整 tabbar 图标、只处理列表空状态、只修复接口域名。</p>
+
+<h2>8.1 推荐顺序</h2>
+<ol>
+  <li seq="auto">建立页面路由和基础布局。</li>
+  <li seq="auto">实现静态页面结构。</li>
+  <li seq="auto">接入 API 数据。</li>
+  <li seq="auto">补齐 loading、empty、error 状态。</li>
+  <li seq="auto">替换 Figma 导出的图标和视觉资源。</li>
+  <li seq="auto">处理交互反馈和必要动效。</li>
+  <li seq="auto">构建并在微信开发者工具测试。</li>
+</ol>
+
+<h2>8.2 动效原则</h2>
+<ul>
+  <li>优先做局部交互动效，例如点击反馈、筛选面板展开、选中态过渡。</li>
+  <li>谨慎做大列表入场动画，尤其是包含远程图片的 scroll-view。</li>
+  <li>不要用 v-if 反复销毁 image 或图片父级列表，否则会造成图片重新加载。</li>
+  <li>tab 页面不建议在 onShow 中强制重播整页动画。</li>
+</ul>
+
+<h1>9. 阶段五：后端与服务端联调</h1>
+<p>小程序项目的服务端联调不只是 API 是否能返回数据，还包括域名、HTTPS、CDN、上传、静态资源和第三方接口。</p>
+
+<h2>9.1 后端检查项</h2>
+<table>
+  <thead><tr><th background-color="light-gray">检查项</th><th background-color="light-gray">要求</th></tr></thead>
+  <tbody>
+    <tr><td>API 域名</td><td>正式环境必须使用 HTTPS 域名。</td></tr>
+    <tr><td>接口路径</td><td>统一前缀，例如 /api。</td></tr>
+    <tr><td>健康检查</td><td>提供 /api/health 或等价接口。</td></tr>
+    <tr><td>图片/视频 URL</td><td>返回 HTTPS CDN 地址。</td></tr>
+    <tr><td>第三方接口</td><td>正式环境使用正式地址，不依赖本地或内网 IP。</td></tr>
+    <tr><td>错误兜底</td><td>第三方接口失败时返回可处理结果，不导致页面崩溃。</td></tr>
+  </tbody>
+</table>
+
+<h2>9.2 服务端验证命令</h2>
+<pre lang="bash"><code>curl -I https://your-domain.com
+curl -sS https://your-domain.com/api/health
+curl -sS https://your-domain.com/api/categories
+curl -sS https://your-domain.com/api/products/home</code></pre>
+
+<h2>9.3 CDN 验证命令</h2>
+<pre lang="bash"><code>curl -I https://cdn.example.com
+curl -sS https://your-domain.com/api/products/home | grep -o 'http://[^&quot;]*' | head</code></pre>
+
+<p>如果接口返回中仍包含 http 图片地址，关闭微信开发者工具的域名校验后图片可能无法显示。</p>
+
+<h1>10. 测试流程</h1>
+<p>测试流程需要覆盖前端、接口、服务端、合法域名和发布环境。建议按照“本地开发测试 → 联调测试 → 准发布测试 → 回归测试”的顺序进行。</p>
+
+<h2>10.1 测试流程图</h2>
+<whiteboard type="mermaid">
+flowchart TD
+    A[本地构建] --> B[微信开发者工具预览]
+    B --> C[视觉还原测试]
+    B --> D[功能交互测试]
+    B --> E[接口数据测试]
+    C --> F{是否通过?}
+    D --> F
+    E --> F
+    F -- 否 --> G[记录截图 / 日志 / 复现路径]
+    G --> H[Agent 定位并修复]
+    H --> A
+    F -- 是 --> I[关闭不校验合法域名]
+    I --> J[正式域名与 CDN 测试]
+    J --> K{是否通过?}
+    K -- 否 --> L[修复 HTTPS / 域名 / CDN / API]
+    L --> I
+    K -- 是 --> M[上传体验版 / 开发版本]
+    M --> N[真机回归测试]
+    N --> O{是否满足发布标准?}
+    O -- 否 --> G
+    O -- 是 --> P[提交审核]
+</whiteboard>
+
+<h2>10.2 视觉还原测试</h2>
+<table>
+  <thead><tr><th background-color="light-gray">检查项</th><th background-color="light-gray">说明</th></tr></thead>
+  <tbody>
+    <tr><td>页面结构</td><td>导航、内容区、tabbar、列表、详情结构与 Figma 一致。</td></tr>
+    <tr><td>间距与尺寸</td><td>重点检查顶部安全区、卡片高度、图标尺寸、左右边距。</td></tr>
+    <tr><td>颜色与字体</td><td>检查主色、灰色、背景色、标题和正文层级。</td></tr>
+    <tr><td>图标资源</td><td>检查选中/未选中状态、画布尺寸、视觉中心。</td></tr>
+    <tr><td>空状态</td><td>无数据时不应展示假数据或兜底列表。</td></tr>
+  </tbody>
+</table>
+
+<h2>10.3 功能测试</h2>
+<ul>
+  <li>tab 切换是否正常。</li>
+  <li>列表滚动和分页/批量渲染是否正常。</li>
+  <li>筛选、排序、详情跳转是否正常。</li>
+  <li>视频、图片、上传、登录等功能是否按预期工作。</li>
+  <li>异常状态是否可恢复，例如接口失败、空数据、图片加载失败。</li>
+</ul>
+
+<h2>10.4 接口测试</h2>
+<ul>
+  <li>所有接口必须使用正式 HTTPS 域名。</li>
+  <li>接口返回字段与前端使用字段一致。</li>
+  <li>列表、详情、分类、首页、上传、配置等接口分别验证。</li>
+  <li>第三方接口失败时应有兜底，不应导致白屏或阻塞页面。</li>
+</ul>
+
+<h2>10.5 发布环境测试</h2>
+<ul>
+  <li>关闭微信开发者工具“不校验合法域名”。</li>
+  <li>确认 request 合法域名已配置。</li>
+  <li>确认 downloadFile 合法域名已配置。</li>
+  <li>确认 uploadFile 合法域名按需配置。</li>
+  <li>确认 HTTPS 证书有效，且接口无 mixed content。</li>
+  <li>真机预览至少覆盖 iOS 和 Android 各一台。</li>
+</ul>
+
+<h1>11. 发布前准入标准</h1>
+<checkbox done="false">设计主流程页面已完成视觉验收。</checkbox>
+<checkbox done="false">所有接口使用正式 HTTPS 域名。</checkbox>
+<checkbox done="false">图片和视频使用 HTTPS CDN。</checkbox>
+<checkbox done="false">关闭合法域名绕过后功能正常。</checkbox>
+<checkbox done="false">空状态、加载状态、接口失败状态已处理。</checkbox>
+<checkbox done="false">微信开发者工具构建无阻塞错误。</checkbox>
+<checkbox done="false">真机预览无关键问题。</checkbox>
+<checkbox done="false">服务端 health、核心 API、CDN 均验证通过。</checkbox>
+
+<h1>12. 交付物清单</h1>
+<table>
+  <thead><tr><th background-color="light-gray">交付物</th><th background-color="light-gray">说明</th></tr></thead>
+  <tbody>
+    <tr><td>Figma 文件</td><td>包含页面、组件、状态和可导出资源。</td></tr>
+    <tr><td>小程序源码</td><td>页面、组件、样式、接口配置。</td></tr>
+    <tr><td>构建产物</td><td>微信开发者工具可导入目录。</td></tr>
+    <tr><td>服务端配置</td><td>域名、HTTPS、反代、pm2、环境变量。</td></tr>
+    <tr><td>测试记录</td><td>截图、接口验证结果、问题清单。</td></tr>
+    <tr><td>发布检查表</td><td>合法域名、CDN、接口、真机测试确认。</td></tr>
+    <tr><td>复盘文档</td><td>记录关键决策、踩坑、后续注意事项。</td></tr>
+  </tbody>
+</table>
+
+<h1>13. 实施建议</h1>
+<ul>
+  <li>每次只让 Agent 处理一个明确问题，避免一次性大改。</li>
+  <li>涉及服务器、证书、域名、数据库的操作必须分步执行并验证。</li>
+  <li>截图反馈应说明页面、位置、预期和实际差异。</li>
+  <li>Agent 修改后必须构建验证，不能只看代码变化。</li>
+  <li>正式发布前以关闭合法域名绕过后的真机表现为准。</li>
+</ul>
+
+<hr/>
+<p>更新时间：2026-06-04</p>

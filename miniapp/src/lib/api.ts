@@ -1,10 +1,12 @@
-const BASE_URL = import.meta.env.DEV ? 'http://localhost:3000/api' : 'http://8.153.73.225/api'
-const SORT_API_URL = 'http://192.168.3.69:9999/api/miniprogram/getcpsortlist'
+const BASE_URL = import.meta.env.DEV ? 'http://localhost:3000/api' : 'https://daqianxr-admin.daqianmijing.com/api'
+const DEFAULT_TIMEOUT = 8000
+const SORT_TIMEOUT = 5000
 
-function request<T>(path: string): Promise<T> {
+function request<T>(path: string, timeout = DEFAULT_TIMEOUT): Promise<T> {
   return new Promise((resolve, reject) => {
     uni.request({
       url: `${BASE_URL}${path}`,
+      timeout,
       success: (res) => {
         if (res.statusCode === 200) {
           resolve(res.data as T)
@@ -17,11 +19,12 @@ function request<T>(path: string): Promise<T> {
   })
 }
 
-function postRequest<T>(url: string, data: any): Promise<T> {
+function postRequest<T>(url: string, data: any, timeout = DEFAULT_TIMEOUT): Promise<T> {
   return new Promise((resolve, reject) => {
     uni.request({
       url,
       method: 'POST',
+      timeout,
       header: { 'Content-Type': 'application/json' },
       data,
       success: (res) => {
@@ -57,10 +60,5 @@ export const api = {
   getProduct: (id: string) => request<any>(`/products/${id}`),
 
   getSortList: (type: 0 | 1) =>
-    postRequest<{ state: string; data: string }>(SORT_API_URL, { type }).then((res) => {
-      if (res.state === 'ok') {
-        return JSON.parse(res.data) as string[]
-      }
-      return []
-    }),
+    request<{ data: string[] }>(`/products/sort-list?type=${type}`, SORT_TIMEOUT).then((res) => res.data || []),
 }

@@ -1,0 +1,51 @@
+<h1>十三、流程图：Agent + Figma MCP 小程序开发闭环</h1>
+<whiteboard type="mermaid">
+flowchart TD
+    A[业务需求 / 产品想法] --> B[Agent 辅助梳理页面清单与信息架构]
+    B --> C[低保真 Mockup]
+    C --> D[Figma 高保真原型]
+
+    D --> E[规范化 Figma 文件]
+    E --> E1[清晰 Frame / Component 命名]
+    E --> E2[准备状态: Default / Active / Empty / Loading]
+    E --> E3[图标 / 图片 / 背景资源可导出]
+
+    E --> F[Agent 通过 Figma MCP 读取设计]
+    F --> F1[解析 Figma URL]
+    F --> F2[查找页面 / 组件 / Icon 节点]
+    F --> F3[读取尺寸 / 颜色 / 字体 / 间距]
+    F --> F4[导出图标 / 背景 / 图片资源]
+
+    F --> G[Agent 修改小程序代码]
+    G --> G1[页面结构]
+    G --> G2[组件与样式]
+    G --> G3[静态资源替换]
+    G --> G4[接口地址与状态处理]
+
+    G --> H[本地构建]
+    H --> H1[npm run build:mp-weixin]
+    H1 --> I[微信开发者工具预览]
+
+    I --> J{是否符合 Figma 与业务预期?}
+    J -- 否 --> K[用户截图反馈 / 指出差异]
+    K --> F
+    J -- 是 --> L[服务端联调]
+
+    L --> L1[HTTPS 域名]
+    L --> L2[API 反代]
+    L --> L3[CDN 图片 HTTPS]
+    L --> L4[微信合法域名]
+
+    L --> M{关闭不校验域名后是否正常?}
+    M -- 否 --> N[Agent 用 curl / 日志 / 截图定位问题]
+    N --> L
+    M -- 是 --> O[微信开发者工具上传]
+
+    O --> P[提交审核 / 发布]
+    P --> Q[Agent 沉淀复盘与 SOP]
+    Q --> R[下个项目复用流程]
+</whiteboard>
+
+<callout emoji="📌" background-color="light-green" border-color="green">
+  <p>这张图可以作为对外介绍时的主流程：Agent 不是替代设计或开发，而是把需求、Figma、代码、本地测试、服务端验证和发布检查串成一个可迭代闭环。</p>
+</callout>

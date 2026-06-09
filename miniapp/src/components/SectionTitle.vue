@@ -23,7 +23,7 @@ defineProps<{
 .title-line {
   width: 48rpx;
   height: 2rpx;
-  background-color: #d0d0d0;
+  background-color: #b8eae0;
 }
 
 .title-text {

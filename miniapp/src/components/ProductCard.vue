@@ -1,7 +1,7 @@
 <template>
   <view class="product-card" :class="[`mode-${mode}`]" @click="handleClick">
     <view class="card-poster">
-      <image class="poster-image" :src="product.poster" mode="aspectFill" />
+      <image class="poster-image" :src="product.poster" mode="aspectFill" lazy-load />
       <view v-if="product.tags.length > 0" class="card-tags">
         <text v-for="tag in product.tags" :key="tag" class="tag" :class="getTagClass(tag)">
           {{ tag }}
