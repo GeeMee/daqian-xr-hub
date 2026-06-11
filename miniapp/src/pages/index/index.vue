@@ -24,7 +24,7 @@
           indicator-active-color="#ffffff"
         >
           <swiper-item v-for="banner in homeData.banners" :key="banner.id" @click="goDetail(banner.productId)">
-            <image class="banner-image tap-feedback" hover-class="tap-feedback-hover" :src="banner.image" mode="aspectFill" lazy-load />
+            <image class="banner-image tap-feedback" hover-class="tap-feedback-hover" :src="ossImg(banner.image, 750)" mode="aspectFill" lazy-load />
           </swiper-item>
         </swiper>
       </view>
@@ -62,7 +62,7 @@
                 @click="goDetail(product.id)"
               >
                 <view class="recommend-cover">
-                  <image class="cover-image" :src="product.poster" mode="aspectFit" lazy-load />
+                  <image class="cover-image" :src="ossImg(product.poster, 300)" mode="aspectFit" lazy-load />
                 </view>
                 <view class="recommend-info">
                   <text class="recommend-name">{{ product.name }}</text>
@@ -87,7 +87,7 @@
             @click="goDetail(product.id)"
           >
             <view class="new-poster-wrap">
-              <image class="new-poster" :src="product.poster" mode="aspectFill" lazy-load />
+              <image class="new-poster" :src="ossImg(product.poster, 400)" mode="aspectFill" lazy-load />
             </view>
             <view class="new-info">
               <text class="new-name">{{ product.name }}</text>
@@ -108,6 +108,7 @@ import { ref, computed, onMounted } from 'vue'
 import NavBar from '../../components/NavBar.vue'
 import SectionTitle from '../../components/SectionTitle.vue'
 import { api } from '../../lib/api'
+import { ossImg } from '../../lib/image'
 
 const navHeight = ref(0)
 const isHomeLoading = ref(true)

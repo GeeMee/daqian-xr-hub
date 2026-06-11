@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { api } from '../../lib/api'
+import { ossImg } from '../../lib/image'
 
 export function SettingsPage() {
   const [brand, setBrand] = useState({ brandName: '', logo: '', slogan: '', phone: '' })
@@ -32,7 +33,7 @@ export function SettingsPage() {
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">品牌LOGO</label>
               <div className="flex items-center gap-4">
-                {brand.logo && <img src={brand.logo} alt="" className="w-16 h-16 rounded object-cover" />}
+                {brand.logo && <img src={ossImg(brand.logo, 160)} alt="" className="w-16 h-16 rounded object-cover" />}
                 <label className="px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-600 hover:bg-gray-50 cursor-pointer">
                   上传图片
                   <input type="file" accept="image/*" className="hidden" onChange={async (e) => {

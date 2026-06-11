@@ -8,7 +8,8 @@
     "start": "node dist/index.js",
     "db:push": "prisma db push",
     "db:seed": "tsx src/seed.ts",
-    "db:studio": "prisma studio"
+    "db:studio": "prisma studio",
+    "compress:images": "tsx src/compress-existing-images.ts"
   },
   "dependencies": {
     "@prisma/client": "^6.8.0",
@@ -17,7 +18,8 @@
     "dotenv": "^17.4.2",
     "express": "^4.21.0",
     "jsonwebtoken": "^9.0.3",
-    "multer": "^1.4.5-lts.1"
+    "multer": "^1.4.5-lts.1",
+    "sharp": "^0.33.5"
   },
   "devDependencies": {
     "@types/ali-oss": "^6.23.3",

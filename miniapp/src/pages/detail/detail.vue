@@ -7,13 +7,13 @@
           v-if="product?.video && showVideo"
           class="product-video"
           :src="product.video"
-          :poster="product.poster"
+          :poster="ossImg(product.poster, 800)"
           controls
           autoplay
           object-fit="cover"
         />
         <view v-else class="video-placeholder">
-          <image class="video-poster" :src="product?.poster" mode="aspectFill" lazy-load />
+          <image class="video-poster" :src="ossImg(product?.poster, 800)" mode="aspectFill" lazy-load />
           <view v-if="product?.video" class="play-btn tap-feedback" hover-class="tap-feedback-hover" @click="startVideo">
             <text class="play-icon">▶</text>
           </view>
@@ -64,7 +64,7 @@
                 v-for="(img, index) in product.images"
                 :key="index"
                 class="detail-image"
-                :src="img"
+                :src="ossImg(img, 640)"
                 mode="aspectFill"
                 lazy-load
                 @click="previewImage(index)"
@@ -135,6 +135,7 @@
 import { ref, computed } from 'vue'
 import { onLoad } from '@dcloudio/uni-app'
 import { api } from '../../lib/api'
+import { ossImg } from '../../lib/image'
 
 const product = ref<any>(null)
 const isFavorited = ref(false)

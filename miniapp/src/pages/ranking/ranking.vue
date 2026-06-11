@@ -2,11 +2,9 @@
   <view class="page">
     <view class="hero">
       <image
-        v-if="heroReady"
         class="hero-bg"
         src="/static/figma-ranking/Bl6Xc2XtW7QOmaCppJdb3Z_2045_163.png"
         mode="aspectFill"
-        lazy-load
       />
     </view>
 
@@ -29,7 +27,6 @@
         v-for="(item, index) in visibleRankedProducts"
         :key="item.id"
         class="rank-item tap-feedback"
-        :class="{ 'first-ready': listReady }"
         hover-class="tap-feedback-hover"
         @click="goDetail(item.id)"
       >
@@ -37,8 +34,7 @@
           <text class="badge-text">{{ index < 3 ? `TOP ${index + 1}` : index + 1 }}</text>
         </view>
         <view class="rank-poster">
-          <image v-if="imageReadyCount > index" class="poster-img" :src="item.poster" mode="aspectFill" lazy-load />
-          <view v-else class="poster-img poster-placeholder"></view>
+          <image class="poster-img" :src="ossImg(item.poster, 280)" mode="aspectFill" lazy-load />
         </view>
         <view class="rank-info">
           <text class="rank-name">{{ item.name }}</text>
@@ -55,13 +51,11 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
 import { api } from '../../lib/api'
+import { ossImg } from '../../lib/image'
 
 const rankedProducts = ref<any[]>([])
 const isRankingLoading = ref(true)
-const heroReady = ref(false)
-const listReady = ref(false)
-const imageReadyCount = ref(0)
-const RANK_BATCH_SIZE = 6
+const RANK_BATCH_SIZE = 10
 const rankRenderCount = ref(RANK_BATCH_SIZE)
 
 const visibleRankedProducts = computed(() => rankedProducts.value.slice(0, rankRenderCount.value))
@@ -69,44 +63,38 @@ const visibleRankedProducts = computed(() => rankedProducts.value.slice(0, rankR
 function loadMoreRanks() {
   if (rankRenderCount.value < rankedProducts.value.length) {
     rankRenderCount.value += RANK_BATCH_SIZE
-    warmImagesOnce()
   }
 }
 
 function buildRankedProducts(products: any[], sortList: string[]) {
+  const matched = new Set<string>()
   const result: any[] = []
   for (const name of sortList) {
     const match = products.find(
       (p: any) => p.name === name || p.name.includes(name) || name.includes(p.name)
     )
-    if (match && !result.find((r) => r.id === match.id)) result.push(match)
+    if (match && !matched.has(match.id)) {
+      matched.add(match.id)
+      result.push(match)
+    }
+  }
+  for (const p of products) {
+    if (!matched.has(p.id)) result.push(p)
   }
   return result
 }
 
-function warmImagesOnce() {
-  const target = visibleRankedProducts.value.length
-  for (let i = imageReadyCount.value; i < target; i++) {
-    setTimeout(() => {
-      if (imageReadyCount.value < i + 1) imageReadyCount.value = i + 1
-    }, 900 + i * 180)
-  }
-}
-
 onMounted(async () => {
   try {
-    const prodRes = await api.getProducts({ status: 'on' })
-    const products = prodRes.data
-    const sortList = await api.getSortList(0)
-    rankedProducts.value = buildRankedProducts(products, sortList)
+    const [prodRes, sortList] = await Promise.all([
+      api.getProducts({ status: 'on' }),
+      api.getSortList(0),
+    ])
+    rankedProducts.value = buildRankedProducts(prodRes.data, sortList)
     rankRenderCount.value = RANK_BATCH_SIZE
-    isRankingLoading.value = false
-
-    setTimeout(() => { listReady.value = true }, 50)
-    setTimeout(() => { heroReady.value = true }, 700)
-    warmImagesOnce()
   } catch (e) {
     console.error('Failed to load ranking:', e)
+  } finally {
     isRankingLoading.value = false
   }
 })
@@ -124,11 +112,6 @@ function goDetail(productId: string) {
 </script>
 
 <style scoped lang="scss">
-@keyframes ranking-first-fade {
-  from { opacity: 0.72; }
-  to { opacity: 1; }
-}
-
 .page {
   min-height: 100vh;
   background-color: #f7f9f8;
@@ -165,11 +148,6 @@ function goDetail(productId: string) {
   box-sizing: border-box;
   background: #ffffff;
   border-bottom: 1rpx solid #dfe2e0;
-  opacity: 1;
-}
-
-.rank-item.first-ready {
-  animation: ranking-first-fade 0.22s ease-out both;
 }
 
 .rank-skeleton-list { width: 100%; }

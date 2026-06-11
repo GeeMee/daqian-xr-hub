@@ -66,7 +66,7 @@
               @click="goDetail(product.id)"
             >
               <view class="poster-wrap">
-                <image class="poster" :src="product.poster" mode="aspectFill" lazy-load />
+                <image class="poster" :src="ossImg(product.poster, 300)" mode="aspectFill" lazy-load />
               </view>
               <view class="card-body">
                 <view class="card-main">
@@ -135,7 +135,7 @@
                     @click="goDetail(product.id)"
                   >
                     <view class="poster-cell-img">
-                      <image class="poster-img" :src="product.poster" mode="aspectFill" lazy-load />
+                      <image class="poster-img" :src="ossImg(product.poster, 440)" mode="aspectFill" lazy-load />
                     </view>
                     <text class="poster-cell-name">{{ product.name }}</text>
                   </view>
@@ -156,7 +156,7 @@
                 @click="goDetail(product.id)"
               >
                 <view class="poster-wrap">
-                  <image class="poster" :src="product.poster" mode="aspectFill" lazy-load />
+                  <image class="poster" :src="ossImg(product.poster, 300)" mode="aspectFill" lazy-load />
                 </view>
                 <view class="card-body">
                   <view class="card-main">
@@ -179,6 +179,7 @@
 import { ref, computed, onMounted } from 'vue'
 import NavBar from '../../components/NavBar.vue'
 import { api } from '../../lib/api'
+import { ossImg } from '../../lib/image'
 
 type TabKey = 'showing' | 'upcoming'
 type PanelKey = '' | 'category' | 'sort'
@@ -773,14 +774,14 @@ function goDetail(productId: string) {
 }
 
 .panel-delay-0 { animation-delay: 0s; }
-.panel-delay-1 { animation-delay: 0.12s; }
-.panel-delay-2 { animation-delay: 0.24s; }
-.panel-delay-3 { animation-delay: 0.36s; }
-.panel-delay-4 { animation-delay: 0.48s; }
-.panel-delay-5 { animation-delay: 0.60s; }
-.panel-delay-6 { animation-delay: 0.72s; }
-.panel-delay-7 { animation-delay: 0.84s; }
-.panel-delay-8 { animation-delay: 0.96s; }
+.panel-delay-1 { animation-delay: 0.04s; }
+.panel-delay-2 { animation-delay: 0.08s; }
+.panel-delay-3 { animation-delay: 0.12s; }
+.panel-delay-4 { animation-delay: 0.16s; }
+.panel-delay-5 { animation-delay: 0.20s; }
+.panel-delay-6 { animation-delay: 0.24s; }
+.panel-delay-7 { animation-delay: 0.28s; }
+.panel-delay-8 { animation-delay: 0.32s; }
 
 .sort-options .panel-option {
   width: 638rpx;

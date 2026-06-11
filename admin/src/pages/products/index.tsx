@@ -1,10 +1,13 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { api } from '../../lib/api'
-import { Search, Plus, Pencil, Trash2, ArrowUp, ArrowDown } from 'lucide-react'
+import { ossImg } from '../../lib/image'
+import { Search, Plus, Pencil, Trash2, ArrowUp, ArrowDown, ChevronLeft, ChevronRight } from 'lucide-react'
 
 type SortField = 'name' | 'createdAt' | 'sortOrder'
 type SortDir = 'asc' | 'desc'
+
+const PAGE_SIZE = 20
 
 export function ProductsPage() {
   const navigate = useNavigate()
@@ -15,6 +18,7 @@ export function ProductsPage() {
   const [statusFilter, setStatusFilter] = useState('')
   const [sortField, setSortField] = useState<SortField>('sortOrder')
   const [sortDir, setSortDir] = useState<SortDir>('asc')
+  const [page, setPage] = useState(1)
 
   const loadData = async () => {
     const [prodRes, catRes] = await Promise.all([
@@ -42,6 +46,15 @@ export function ProductsPage() {
     if (sortField === 'createdAt') return a.createdAt.localeCompare(b.createdAt) * dir
     return (a.sortOrder - b.sortOrder) * dir
   })
+
+  const totalPages = Math.max(1, Math.ceil(sorted.length / PAGE_SIZE))
+
+  // 筛选 / 排序变化时回到第一页
+  useEffect(() => { setPage(1) }, [search, categoryFilter, statusFilter, sortField, sortDir])
+  // 数据变少（如删除）导致当前页超界时收敛到最后一页
+  useEffect(() => { if (page > totalPages) setPage(totalPages) }, [page, totalPages])
+
+  const paged = sorted.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE)
 
   const toggleShelf = async (id: string, current: boolean) => {
     try {
@@ -126,10 +139,10 @@ export function ProductsPage() {
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-100">
-            {sorted.map((product) => (
+            {paged.map((product) => (
               <tr key={product.id} className="hover:bg-gray-50">
                 <td className="px-4 py-3 text-gray-400 text-xs font-mono">{product.id}</td>
-                <td className="px-4 py-3"><img src={product.poster} alt="" className="w-9 h-12 rounded object-cover" /></td>
+                <td className="px-4 py-3"><img src={ossImg(product.poster, 100)} alt="" loading="lazy" decoding="async" className="w-9 h-12 rounded object-cover" /></td>
                 <td className="px-4 py-3 font-medium text-gray-900">{product.name}</td>
                 <td className="px-4 py-3 text-gray-600">{getCategoryName(product.categoryId)}</td>
                 <td className="px-4 py-3">
@@ -159,6 +172,30 @@ export function ProductsPage() {
         </table>
         {sorted.length === 0 && <div className="py-12 text-center text-gray-400 text-sm">暂无数据</div>}
       </div>
+
+      {sorted.length > 0 && (
+        <div className="flex items-center justify-between mt-4 text-sm text-gray-600">
+          <span>
+            共 {sorted.length} 个产品，第 {page} / {totalPages} 页
+          </span>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setPage((p) => Math.max(1, p - 1))}
+              disabled={page <= 1}
+              className="flex items-center gap-1 px-3 py-1.5 border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed"
+            >
+              <ChevronLeft size={14} />上一页
+            </button>
+            <button
+              onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+              disabled={page >= totalPages}
+              className="flex items-center gap-1 px-3 py-1.5 border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed"
+            >
+              下一页<ChevronRight size={14} />
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

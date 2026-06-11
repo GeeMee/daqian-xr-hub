@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { api } from '../../lib/api'
+import { ossImg } from '../../lib/image'
 import { RichTextEditor } from '../../components/shared/RichTextEditor'
 import { Plus, Trash2 } from 'lucide-react'
 
@@ -146,7 +147,7 @@ export function ProductEditPage() {
             </Field>
             <Field label="产品海报" required>
               <div className="flex items-center gap-4">
-                {form.poster && <img src={form.poster} alt="" className="w-20 h-20 rounded object-cover" />}
+                {form.poster && <img src={ossImg(form.poster, 200)} alt="" className="w-20 h-20 rounded object-cover" />}
                 <label className={`px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-600 hover:bg-gray-50 cursor-pointer ${uploading === 'poster' ? 'opacity-50 pointer-events-none' : ''}`}>
                   {uploading === 'poster' ? '上传中...' : '上传图片'}
                   <input type="file" accept="image/*" className="hidden" onChange={async (e) => {
@@ -233,7 +234,7 @@ export function ProductEditPage() {
               <div className="grid grid-cols-4 gap-3">
                 {form.images.map((url, index) => (
                   <div key={index} className="relative group">
-                    <img src={url} alt="" className="w-full h-24 rounded-lg object-cover border border-gray-200" />
+                    <img src={ossImg(url, 300)} alt="" loading="lazy" decoding="async" className="w-full h-24 rounded-lg object-cover border border-gray-200" />
                     <button type="button" onClick={() => setForm({ ...form, images: form.images.filter((_, i) => i !== index) })} className="absolute -top-2 -right-2 w-5 h-5 bg-red-500 text-white rounded-full text-xs flex items-center justify-center hover:bg-red-600 opacity-0 group-hover:opacity-100 transition-opacity">×</button>
                   </div>
                 ))}

@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { api } from '../../lib/api'
+import { ossImg } from '../../lib/image'
 import { Plus, Pencil, Trash2 } from 'lucide-react'
 
 export function BannersPage() {
@@ -82,7 +83,7 @@ export function BannersPage() {
           <tbody className="divide-y divide-gray-100">
             {banners.map((banner) => (
               <tr key={banner.id} className="hover:bg-gray-50">
-                <td className="px-4 py-3"><img src={banner.image} alt="" className="w-24 h-12 rounded object-cover" /></td>
+                <td className="px-4 py-3"><img src={ossImg(banner.image, 200)} alt="" loading="lazy" decoding="async" className="w-24 h-12 rounded object-cover" /></td>
                 <td className="px-4 py-3 text-gray-900">{banner.productName}</td>
                 <td className="px-4 py-3 text-gray-600">{banner.sortOrder}</td>
                 <td className="px-4 py-3 text-gray-500">{banner.createdAt?.slice(0, 10)}</td>
@@ -105,7 +106,7 @@ export function BannersPage() {
             <div className="space-y-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">轮播图 <span className="text-red-500">*</span></label>
-                {formImage && <img src={formImage} alt="" className="w-full h-24 object-cover rounded-lg mb-2" />}
+                {formImage && <img src={ossImg(formImage, 400)} alt="" className="w-full h-24 object-cover rounded-lg mb-2" />}
                 <label className={`px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-600 hover:bg-gray-50 cursor-pointer inline-block ${uploading ? 'opacity-50 pointer-events-none' : ''}`}>
                   {uploading ? '上传中...' : (formImage ? '重新上传' : '上传图片')}
                   <input type="file" accept="image/*" className="hidden" onChange={async (e) => {
