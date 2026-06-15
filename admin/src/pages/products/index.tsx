@@ -76,7 +76,8 @@ export function ProductsPage() {
     }
   }
 
-  const getCategoryName = (catId: string) => categories.find((c) => c.id === catId)?.name || '-'
+  const getCategoryNames = (product: any) =>
+    (product.categories || []).map((c: any) => c.name).join('、') || '-'
 
   const SortIcon = ({ field }: { field: SortField }) => {
     if (sortField !== field) return <ArrowUp size={12} className="text-gray-300" />
@@ -107,7 +108,7 @@ export function ProductsPage() {
           />
         </div>
         <select value={categoryFilter} onChange={(e) => setCategoryFilter(e.target.value)} className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-gray-900">
-          <option value="">全部分类</option>
+          <option value="">全部题材</option>
           {categories.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
         </select>
         <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)} className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-gray-900">
@@ -126,7 +127,7 @@ export function ProductsPage() {
               <th className="text-left px-4 py-3 font-medium text-gray-600 cursor-pointer select-none" onClick={() => handleSort('name')}>
                 <span className="inline-flex items-center gap-1">产品名称 <SortIcon field="name" /></span>
               </th>
-              <th className="text-left px-4 py-3 font-medium text-gray-600">分类</th>
+              <th className="text-left px-4 py-3 font-medium text-gray-600">题材</th>
               <th className="text-left px-4 py-3 font-medium text-gray-600">推荐</th>
               <th className="text-left px-4 py-3 font-medium text-gray-600">状态</th>
               <th className="text-left px-4 py-3 font-medium text-gray-600 cursor-pointer select-none" onClick={() => handleSort('sortOrder')}>
@@ -144,7 +145,7 @@ export function ProductsPage() {
                 <td className="px-4 py-3 text-gray-400 text-xs font-mono">{product.id}</td>
                 <td className="px-4 py-3"><img src={ossImg(product.poster, 100)} alt="" loading="lazy" decoding="async" className="w-9 h-12 rounded object-cover" /></td>
                 <td className="px-4 py-3 font-medium text-gray-900">{product.name}</td>
-                <td className="px-4 py-3 text-gray-600">{getCategoryName(product.categoryId)}</td>
+                <td className="px-4 py-3 text-gray-600">{getCategoryNames(product)}</td>
                 <td className="px-4 py-3">
                   <span className={`text-xs px-2 py-0.5 rounded ${product.isRecommended ? 'bg-blue-50 text-blue-600' : 'text-gray-400'}`}>
                     {product.isRecommended ? '是' : '否'}

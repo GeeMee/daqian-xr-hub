@@ -30,9 +30,11 @@ categoriesRouter.put('/:id', async (req, res) => {
 })
 
 categoriesRouter.delete('/:id', async (req, res) => {
-  const count = await prisma.product.count({ where: { categoryId: req.params.id } })
+  const count = await prisma.product.count({
+    where: { categories: { some: { id: req.params.id } } },
+  })
   if (count > 0) {
-    return res.status(400).json({ error: '该分类下有产品，请先转移产品' })
+    return res.status(400).json({ error: '该题材下有产品，请先转移产品' })
   }
   await prisma.category.delete({ where: { id: req.params.id } })
   res.json({ success: true })

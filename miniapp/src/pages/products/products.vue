@@ -211,8 +211,8 @@ const sortOptions = [
 ]
 
 const selectedCategoryLabel = computed(() => {
-  if (selectedCategory.value === 'all') return '全部类型'
-  return categories.value.find((item) => item.id === selectedCategory.value)?.name || '全部类型'
+  if (selectedCategory.value === 'all') return '全部题材'
+  return categories.value.find((item) => item.id === selectedCategory.value)?.name || '全部题材'
 })
 
 const selectedSortLabel = computed(() => {
@@ -238,7 +238,9 @@ const currentPanelValue = computed(() => {
 const filteredProducts = computed(() => {
   let list = products.value
   if (selectedCategory.value !== 'all') {
-    list = list.filter((p) => p.categoryId === selectedCategory.value)
+    list = list.filter(
+      (p) => Array.isArray(p.categories) && p.categories.some((c: any) => c.id === selectedCategory.value)
+    )
   }
   const sorted = [...list]
   if ((selectedSort.value === 'monthly' || selectedSort.value === 'daily') && sortOrderList.value.length > 0) {

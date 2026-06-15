@@ -3,6 +3,9 @@ dist/
 .env
 .env.local
 
+# Graphify (local structure graph, rebuild with: graphify update .)
+graphify-out/
+
 # Server
 server/node_modules/
 server/dist/

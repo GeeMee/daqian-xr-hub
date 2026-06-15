@@ -31,7 +31,7 @@ function normalizeBanner(banner: any) {
 productsRouter.get('/', async (req, res) => {
   const { category, search, status, page = '1', pageSize = '20' } = req.query
   const where: any = {}
-  if (category) where.categoryId = category
+  if (category) where.categories = { some: { id: category as string } }
   if (search) where.name = { contains: search as string }
   if (status === 'on') where.isOnShelf = true
   if (status === 'off') where.isOnShelf = false
@@ -39,7 +39,7 @@ productsRouter.get('/', async (req, res) => {
   const total = await prisma.product.count({ where })
   const products = await prisma.product.findMany({
     where,
-    include: { category: true },
+    include: { categories: true },
     orderBy: { sortOrder: 'asc' },
     skip: (Number(page) - 1) * Number(pageSize),
     take: Number(pageSize),
@@ -48,7 +48,8 @@ productsRouter.get('/', async (req, res) => {
   const formatted = products.map((p) => ({
     ...normalizeProduct(p),
     recommendations: JSON.parse(p.recommendations),
-    categoryName: p.category.name,
+    categories: p.categories.map((c) => ({ id: c.id, name: c.name })),
+    categoryNames: p.categories.map((c) => c.name).join('、'),
   }))
 
   res.json({ data: formatted, total, page: Number(page), pageSize: Number(pageSize) })
@@ -106,7 +107,8 @@ productsRouter.get('/upcoming', async (_req, res) => {
 })
 
 productsRouter.get('/sort-list', async (req, res) => {
-  const type = Number(req.query.type || 0) === 1 ? 1 : 0
+  // type 由调用方决定：0=当日, 1=当月, 其它值=供应商提供的总榜等类型，原样透传
+  const type = Number.isFinite(Number(req.query.type)) ? Number(req.query.type) : 0
   const sortApiUrl = process.env.SORT_API_URL
 
   if (!sortApiUrl) {
@@ -138,7 +140,7 @@ productsRouter.get('/sort-list', async (req, res) => {
 productsRouter.get('/:id', async (req, res) => {
   const product = await prisma.product.findUnique({
     where: { id: req.params.id },
-    include: { category: true },
+    include: { categories: true },
   })
   if (!product) return res.status(404).json({ error: 'Not found' })
   const normalizedProduct = normalizeProduct(product)
@@ -146,12 +148,13 @@ productsRouter.get('/:id', async (req, res) => {
     ...normalizedProduct,
     recommendations: JSON.parse(product.recommendations),
     images: JSON.parse((normalizedProduct.images as string) || '[]'),
-    categoryName: product.category.name,
+    categories: product.categories.map((c) => ({ id: c.id, name: c.name })),
+    categoryNames: product.categories.map((c) => c.name).join('、'),
   })
 })
 
 productsRouter.post('/', async (req, res) => {
-  const { recommendations, images, ...data } = req.body
+  const { recommendations, images, categoryIds, ...data } = req.body
   const product = await prisma.product.create({
     data: {
       ...data,
@@ -159,19 +162,22 @@ productsRouter.post('/', async (req, res) => {
       notices: data.notices || '',
       recommendations: JSON.stringify(recommendations || []),
       images: JSON.stringify(images || []),
+      categories: { connect: (categoryIds || []).map((id: string) => ({ id })) },
     },
   })
   res.json(product)
 })
 
 productsRouter.put('/:id', async (req, res) => {
-  const { recommendations, images, ...data } = req.body
+  const { recommendations, images, categoryIds, ...data } = req.body
   const product = await prisma.product.update({
     where: { id: req.params.id },
     data: {
       ...data,
       recommendations: recommendations ? JSON.stringify(recommendations) : undefined,
       images: images ? JSON.stringify(images) : undefined,
+      // categoryIds 传了就整体替换关联；没传则不动
+      categories: categoryIds ? { set: categoryIds.map((id: string) => ({ id })) } : undefined,
     },
   })
   res.json(product)

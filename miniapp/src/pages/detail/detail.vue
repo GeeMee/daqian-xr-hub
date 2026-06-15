@@ -143,8 +143,8 @@ const statusBarHeight = ref(0)
 const showVideo = ref(false)
 
 const isEscapeRoom = computed(() => {
-  const name = product.value?.categoryName || ''
-  return name.includes('密室')
+  const cats = product.value?.categories || []
+  return cats.some((c: any) => (c.name || '').includes('密室'))
 })
 
 const noticeLines = computed(() => {

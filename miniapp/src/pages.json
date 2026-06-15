@@ -34,6 +34,13 @@
         "navigationBarTitleText": "产品详情",
         "navigationStyle": "custom"
       }
+    },
+    {
+      "path": "pages/suggestion/suggestion",
+      "style": {
+        "navigationBarTitleText": "建议箱",
+        "navigationStyle": "custom"
+      }
     }
   ],
   "globalStyle": {

@@ -70,6 +70,9 @@ export const api = {
     get: () => request<any>('/settings'),
     update: (data: any) => request<any>('/settings', { method: 'PUT', body: JSON.stringify(data) }),
   },
+  suggestions: {
+    list: () => request<{ data: any[] }>('/suggestions'),
+  },
   upload: (file: File, onProgress?: (percent: number) => void) => {
     return new Promise<{ url: string }>((resolve, reject) => {
       const formData = new FormData()

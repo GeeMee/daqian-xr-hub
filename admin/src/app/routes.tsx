@@ -9,6 +9,7 @@ import { BannersPage } from '../pages/banners'
 import { SettingsPage } from '../pages/settings'
 import { AdminsPage } from '../pages/admins'
 import { LogsPage } from '../pages/logs'
+import { SuggestionsPage } from '../pages/suggestions'
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const isLoggedIn = useAuthStore((s) => s.isLoggedIn)
@@ -29,6 +30,7 @@ export function AppRoutes() {
           <Route path="categories" element={<CategoriesPage />} />
           <Route path="banners" element={<BannersPage />} />
           <Route path="settings" element={<SettingsPage />} />
+          <Route path="suggestions" element={<SuggestionsPage />} />
           <Route path="admins" element={<AdminsPage />} />
           <Route path="logs" element={<LogsPage />} />
         </Route>

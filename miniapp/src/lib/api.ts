@@ -59,6 +59,9 @@ export const api = {
 
   getProduct: (id: string) => request<any>(`/products/${id}`),
 
-  getSortList: (type: 0 | 1) =>
+  getSortList: (type: number) =>
     request<{ data: string[] }>(`/products/sort-list?type=${type}`, SORT_TIMEOUT).then((res) => res.data || []),
+
+  submitSuggestion: (content: string) =>
+    postRequest<{ success: boolean }>(`${BASE_URL}/suggestions`, { content }),
 }

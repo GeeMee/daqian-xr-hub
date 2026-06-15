@@ -20,7 +20,7 @@ export function ProductEditPage() {
   const [videoProgress, setVideoProgress] = useState(0)
   const [form, setForm] = useState({
     name: '',
-    categoryId: '',
+    categoryIds: [] as string[],
     poster: '',
     video: '',
     shortDesc: '',
@@ -46,7 +46,7 @@ export function ProductEditPage() {
           const product = await api.products.get(id!)
           setForm({
             name: product.name,
-            categoryId: product.categoryId,
+            categoryIds: (product.categories || []).map((c: any) => c.id),
             poster: product.poster,
             video: product.video || '',
             shortDesc: product.shortDesc,
@@ -75,7 +75,18 @@ export function ProductEditPage() {
 
   const update = (key: string, value: unknown) => setForm({ ...form, [key]: value })
 
-  const isEscapeRoom = categories.find((c) => c.id === form.categoryId)?.name?.includes('密室') ?? false
+  const toggleCategory = (catId: string) => {
+    setForm((prev) => ({
+      ...prev,
+      categoryIds: prev.categoryIds.includes(catId)
+        ? prev.categoryIds.filter((id) => id !== catId)
+        : [...prev.categoryIds, catId],
+    }))
+  }
+
+  const isEscapeRoom = categories
+    .filter((c) => form.categoryIds.includes(c.id))
+    .some((c) => c.name?.includes('密室'))
 
   const addRecommendation = () => {
     setForm({ ...form, recommendations: [...form.recommendations, { icon: '✨', text: '' }] })
@@ -91,7 +102,7 @@ export function ProductEditPage() {
 
   const handleSave = async (): Promise<boolean> => {
     if (!form.name.trim()) { alert('请填写产品名称'); return false }
-    if (!form.categoryId) { alert('请选择所属分类'); return false }
+    if (form.categoryIds.length === 0) { alert('请至少选择一个题材'); return false }
 
     // 检查重名
     if (!isEdit) {
@@ -139,11 +150,28 @@ export function ProductEditPage() {
             <Field label="产品名称" required>
               <input value={form.name} onChange={(e) => update('name', e.target.value)} placeholder="最多20字" maxLength={20} className="input" />
             </Field>
-            <Field label="所属分类" required>
-              <select value={form.categoryId} onChange={(e) => update('categoryId', e.target.value)} className="input">
-                <option value="">请选择分类</option>
-                {categories.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
-              </select>
+            <Field label="所属题材" required>
+              <div className="flex flex-wrap gap-2">
+                {categories.map((c) => {
+                  const checked = form.categoryIds.includes(c.id)
+                  return (
+                    <button
+                      type="button"
+                      key={c.id}
+                      onClick={() => toggleCategory(c.id)}
+                      className={`px-3 py-1.5 text-sm rounded-lg border transition-colors ${
+                        checked
+                          ? 'bg-gray-900 text-white border-gray-900'
+                          : 'bg-white text-gray-600 border-gray-300 hover:bg-gray-50'
+                      }`}
+                    >
+                      {c.name}
+                    </button>
+                  )
+                })}
+                {categories.length === 0 && <span className="text-sm text-gray-400">暂无题材，请先到「题材管理」添加</span>}
+              </div>
+              <p className="text-xs text-gray-400 mt-1">可多选，点击切换选中状态</p>
             </Field>
             <Field label="产品海报" required>
               <div className="flex items-center gap-4">

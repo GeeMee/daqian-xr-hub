@@ -9,6 +9,13 @@
           mode="aspectFit"
         />
       </view>
+
+      <view class="menu-list">
+        <view class="menu-item tap-feedback" hover-class="tap-feedback-hover" @click="goSuggestion">
+          <text class="menu-item-label">建议箱</text>
+          <text class="menu-item-arrow">›</text>
+        </view>
+      </view>
     </view>
   </view>
 </template>
@@ -24,6 +31,10 @@ onMounted(() => {
   const statusBarHeight = systemInfo.statusBarHeight || 0
   navHeight.value = statusBarHeight + 44
 })
+
+function goSuggestion() {
+  uni.navigateTo({ url: '/pages/suggestion/suggestion' })
+}
 </script>
 
 <style scoped lang="scss">
@@ -51,5 +62,28 @@ onMounted(() => {
 .placeholder-image {
   width: 426rpx;
   height: 500rpx;
+}
+
+.menu-list {
+  margin: 0 32rpx;
+  background: #ffffff;
+  border-radius: 16rpx;
+  overflow: hidden;
+  border: 1rpx solid #eef1f0;
+}
+.menu-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 100rpx;
+  padding: 0 32rpx;
+}
+.menu-item-label {
+  font-size: 30rpx;
+  color: #1a211e;
+}
+.menu-item-arrow {
+  font-size: 36rpx;
+  color: #c4c9c7;
 }
 </style>

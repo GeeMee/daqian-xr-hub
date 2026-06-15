@@ -10,10 +10,16 @@ async function seed() {
   await prisma.category.deleteMany()
 
   const categories = [
-    { id: 'cat-1', name: '自研产品', sortOrder: 1 },
-    { id: 'cat-2', name: '发行产品', sortOrder: 2 },
-    { id: 'cat-3', name: '密室产品', sortOrder: 3 },
-    { id: 'cat-4', name: '即将上线', sortOrder: 4 },
+    { id: 'theme-deepsea', name: '深海', sortOrder: 1 },
+    { id: 'theme-mr', name: 'MR互动', sortOrder: 2 },
+    { id: 'theme-casual', name: '休闲', sortOrder: 3 },
+    { id: 'theme-history', name: '历史', sortOrder: 4 },
+    { id: 'theme-horror', name: '恐怖', sortOrder: 5 },
+    { id: 'theme-vrroom', name: 'VR密室', sortOrder: 6 },
+    { id: 'theme-red', name: '红色主题', sortOrder: 7 },
+    { id: 'theme-guofeng', name: '国风神话', sortOrder: 8 },
+    { id: 'theme-dino', name: '恐龙', sortOrder: 9 },
+    { id: 'theme-nature', name: '自然', sortOrder: 10 },
   ]
 
   for (const cat of categories) {
@@ -23,7 +29,7 @@ async function seed() {
 
   const products = [
     {
-      id: 'p-001', name: '深渊之眼', categoryId: 'cat-1',
+      id: 'p-001', name: '深渊之眼', categoryIds: ['theme-deepsea'],
       poster: `${CDN}/product-001.jpg`,
       shortDesc: '沉浸式深海探秘',
       description: '在无尽深海中，一座被遗忘的古老神殿正在苏醒。你将穿戴XR设备，化身深海探险家，穿越幽暗的海底隧道，解开远古文明留下的谜题。',
@@ -38,7 +44,7 @@ async function seed() {
       isRecommended: true, isOnShelf: true, sortOrder: 1,
     },
     {
-      id: 'p-002', name: '星际迷航', categoryId: 'cat-1',
+      id: 'p-002', name: '星际迷航', categoryIds: ['theme-mr'],
       poster: `${CDN}/product-002.jpg`,
       shortDesc: '太空冒险之旅',
       description: '2187年，人类的星际殖民船"方舟号"在穿越虫洞时遭遇未知能量风暴，你作为幸存的船员之一，必须在飞船失控前找到逃生舱。',
@@ -52,7 +58,7 @@ async function seed() {
       isRecommended: true, isOnShelf: true, sortOrder: 2,
     },
     {
-      id: 'p-003', name: '幽灵古堡', categoryId: 'cat-3',
+      id: 'p-003', name: '幽灵古堡', categoryIds: ['theme-horror', 'theme-vrroom'],
       poster: `${CDN}/product-003.jpg`,
       shortDesc: '哥特式恐怖密室',
       description: '维多利亚时代的古堡深处，传说中的幽灵伯爵已经沉睡了三百年。当午夜钟声敲响，古堡的每一面墙壁都开始低语。',
@@ -67,7 +73,7 @@ async function seed() {
       isRecommended: true, isOnShelf: true, sortOrder: 3,
     },
     {
-      id: 'p-004', name: '侏罗纪重生', categoryId: 'cat-2',
+      id: 'p-004', name: '侏罗纪重生', categoryIds: ['theme-dino'],
       poster: `${CDN}/product-004.jpg`,
       shortDesc: '恐龙世界探险',
       description: '时空裂缝将你带回了白垩纪末期，这里是恐龙统治的最后乐园。作为时空旅行者，你需要在火山爆发前收集珍贵的基因样本。',
@@ -81,7 +87,7 @@ async function seed() {
       isRecommended: true, isOnShelf: true, sortOrder: 4,
     },
     {
-      id: 'p-005', name: '赛博朋克2099', categoryId: 'cat-1',
+      id: 'p-005', name: '赛博朋克2099', categoryIds: ['theme-mr'],
       poster: `${CDN}/product-005.jpg`,
       shortDesc: '未来都市沉浸剧',
       description: '2099年的新东京，霓虹灯下暗流涌动。你是一名赏金猎人，接到了一个神秘委托——潜入巨型企业"天网"的总部。',
@@ -95,7 +101,7 @@ async function seed() {
       isRecommended: false, isOnShelf: true, sortOrder: 5,
     },
     {
-      id: 'p-006', name: '失落的亚特兰蒂斯', categoryId: 'cat-2',
+      id: 'p-006', name: '失落的亚特兰蒂斯', categoryIds: ['theme-deepsea'],
       poster: `${CDN}/product-006.jpg`,
       shortDesc: '海底文明解谜',
       description: '传说中的亚特兰蒂斯并未沉没，它只是隐藏在了另一个维度。一张古老的海图指引你来到了这座水下都市的入口。',
@@ -109,7 +115,7 @@ async function seed() {
       isRecommended: false, isOnShelf: true, sortOrder: 6,
     },
     {
-      id: 'p-007', name: '末日列车', categoryId: 'cat-3',
+      id: 'p-007', name: '末日列车', categoryIds: ['theme-horror'],
       poster: `${CDN}/product-007.jpg`,
       shortDesc: '末世生存剧场',
       description: '冰封末世，最后的人类文明在一列永不停歇的列车上延续。你从末等车厢醒来，记忆全无。',
@@ -123,7 +129,7 @@ async function seed() {
       isRecommended: false, isOnShelf: true, sortOrder: 7,
     },
     {
-      id: 'p-008', name: '龙宫秘境', categoryId: 'cat-4',
+      id: 'p-008', name: '龙宫秘境', categoryIds: ['theme-guofeng'],
       poster: `${CDN}/product-008.jpg`,
       shortDesc: '东方神话冒险',
       description: '即将上线的全新东方神话主题体验。你将化身龙宫来客，探索海底龙王的宝藏殿堂。',
@@ -138,7 +144,13 @@ async function seed() {
   ]
 
   for (const p of products) {
-    await prisma.product.create({ data: p })
+    const { categoryIds, ...rest } = p as any
+    await prisma.product.create({
+      data: {
+        ...rest,
+        categories: { connect: (categoryIds as string[]).map((id) => ({ id })) },
+      },
+    })
   }
   console.log(`Created ${products.length} products`)
 

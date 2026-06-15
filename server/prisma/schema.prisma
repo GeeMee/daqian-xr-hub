@@ -13,14 +13,13 @@ model Category {
   sortOrder Int       @default(0)
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
-  products  Product[]
+  products  Product[] @relation("ProductCategories")
 }
 
 model Product {
-  id              String   @id @default(cuid())
+  id              String     @id @default(cuid())
   name            String
-  categoryId      String
-  category        Category @relation(fields: [categoryId], references: [id])
+  categories      Category[] @relation("ProductCategories")
   poster          String   @default("")
   video           String   @default("")
   shortDesc       String   @default("")
@@ -48,6 +47,12 @@ model Banner {
   sortOrder Int      @default(0)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+}
+
+model Suggestion {
+  id        String   @id @default(cuid())
+  content   String   @db.Text
+  createdAt DateTime @default(now())
 }
 
 model Setting {

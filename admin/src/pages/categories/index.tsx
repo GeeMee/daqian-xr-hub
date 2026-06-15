@@ -31,10 +31,10 @@ export function CategoriesPage() {
 
   const handleDelete = async (cat: any) => {
     if (cat.productCount > 0) {
-      alert(`该分类下有${cat.productCount}个产品，请先转移产品后再删除`)
+      alert(`该题材下有${cat.productCount}个产品，请先转移产品后再删除`)
       return
     }
-    if (confirm('确定删除该分类？')) {
+    if (confirm('确定删除该题材？')) {
       try {
         await api.categories.delete(cat.id)
         loadData()
@@ -47,9 +47,9 @@ export function CategoriesPage() {
   return (
     <div>
       <div className="flex items-center justify-between mb-6">
-        <h2 className="text-lg font-semibold text-gray-900">分类管理</h2>
+        <h2 className="text-lg font-semibold text-gray-900">题材管理</h2>
         <button onClick={openAdd} className="flex items-center gap-2 px-4 py-2 bg-gray-900 text-white text-sm rounded-lg hover:bg-gray-800">
-          <Plus size={16} />新增分类
+          <Plus size={16} />新增题材
         </button>
       </div>
 
@@ -58,7 +58,7 @@ export function CategoriesPage() {
           <thead className="bg-gray-50 border-b border-gray-200">
             <tr>
               <th className="text-left px-4 py-3 font-medium text-gray-600">ID</th>
-              <th className="text-left px-4 py-3 font-medium text-gray-600">分类名称</th>
+              <th className="text-left px-4 py-3 font-medium text-gray-600">题材名称</th>
               <th className="text-left px-4 py-3 font-medium text-gray-600">产品数量</th>
               <th className="text-left px-4 py-3 font-medium text-gray-600">创建时间</th>
               <th className="text-left px-4 py-3 font-medium text-gray-600">操作</th>
@@ -86,8 +86,8 @@ export function CategoriesPage() {
       {showDialog && (
         <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
           <div className="bg-white rounded-xl p-6 w-full max-w-sm shadow-xl">
-            <h3 className="text-base font-semibold text-gray-900 mb-4">{editingId ? '编辑分类' : '新增分类'}</h3>
-            <input value={name} onChange={(e) => setName(e.target.value)} placeholder="分类名称（最多10字）" maxLength={10} className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-gray-900 mb-4" />
+            <h3 className="text-base font-semibold text-gray-900 mb-4">{editingId ? '编辑题材' : '新增题材'}</h3>
+            <input value={name} onChange={(e) => setName(e.target.value)} placeholder="题材名称（最多10字）" maxLength={10} className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-gray-900 mb-4" />
             <div className="flex justify-end gap-2">
               <button onClick={() => setShowDialog(false)} className="px-4 py-2 text-sm text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-50">取消</button>
               <button onClick={handleSave} className="px-4 py-2 text-sm bg-gray-900 text-white rounded-lg hover:bg-gray-800">确定</button>

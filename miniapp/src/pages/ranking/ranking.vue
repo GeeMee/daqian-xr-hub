@@ -8,6 +8,27 @@
       />
     </view>
 
+    <view v-if="showRankTabs" class="rank-tabs">
+      <view
+        class="rank-tab tap-feedback"
+        :class="{ active: currentTab === 'total' }"
+        hover-class="tap-feedback-hover"
+        @click="switchRankTab('total')"
+      >
+        <text class="rank-tab-text">总榜</text>
+        <view v-if="currentTab === 'total'" class="rank-tab-underline"></view>
+      </view>
+      <view
+        class="rank-tab tap-feedback"
+        :class="{ active: currentTab === 'monthly' }"
+        hover-class="tap-feedback-hover"
+        @click="switchRankTab('monthly')"
+      >
+        <text class="rank-tab-text">月榜</text>
+        <view v-if="currentTab === 'monthly'" class="rank-tab-underline"></view>
+      </view>
+    </view>
+
     <scroll-view class="rank-list" scroll-y :show-scrollbar="false" @scrolltolower="loadMoreRanks">
       <view v-if="isRankingLoading" class="rank-skeleton-list">
         <view v-for="item in 4" :key="item" class="rank-item skeleton-rank-item">
@@ -53,8 +74,22 @@ import { ref, computed, onMounted } from 'vue'
 import { api } from '../../lib/api'
 import { ossImg } from '../../lib/image'
 
+type RankTab = 'total' | 'monthly'
+
+// 榜单数据来自外部排序API：月榜=当月(type1)；总榜=供应商提供的总榜type
+// TODO: 供应商给出总榜 type 后，把 TOTAL_RANK_TYPE 改成对应值即可
+const MONTHLY_RANK_TYPE = 1
+const TOTAL_RANK_TYPE = 2
+
+// 总榜接口未就绪：本期只显示月榜并隐藏 tab。总榜上线后改回 true、默认 tab 可设为 'total'
+const showRankTabs = false
+
+const currentTab = ref<RankTab>('monthly')
+const allProducts = ref<any[]>([])
 const rankedProducts = ref<any[]>([])
 const isRankingLoading = ref(true)
+const sortListCache: Record<RankTab, string[] | null> = { total: null, monthly: null }
+
 const RANK_BATCH_SIZE = 10
 const rankRenderCount = ref(RANK_BATCH_SIZE)
 
@@ -66,35 +101,58 @@ function loadMoreRanks() {
   }
 }
 
+// 按排序API返回的有序名字匹配产品：命中即进榜（精确优先，再子串），
+// 未命中的名字顺延跳过，不留空号；不在名单里的产品不展示。
 function buildRankedProducts(products: any[], sortList: string[]) {
-  const matched = new Set<string>()
+  const used = new Set<string>()
   const result: any[] = []
   for (const name of sortList) {
-    const match = products.find(
-      (p: any) => p.name === name || p.name.includes(name) || name.includes(p.name)
-    )
-    if (match && !matched.has(match.id)) {
-      matched.add(match.id)
+    let match = products.find((p: any) => !used.has(p.id) && p.name === name)
+    if (!match) {
+      match = products.find(
+        (p: any) => !used.has(p.id) && (p.name.includes(name) || name.includes(p.name))
+      )
+    }
+    if (match) {
+      used.add(match.id)
       result.push(match)
     }
-  }
-  for (const p of products) {
-    if (!matched.has(p.id)) result.push(p)
   }
   return result
 }
 
-onMounted(async () => {
+async function loadTab(tab: RankTab) {
+  isRankingLoading.value = true
   try {
-    const [prodRes, sortList] = await Promise.all([
-      api.getProducts({ status: 'on' }),
-      api.getSortList(0),
-    ])
-    rankedProducts.value = buildRankedProducts(prodRes.data, sortList)
+    let sortList = sortListCache[tab]
+    if (!sortList) {
+      const type = tab === 'monthly' ? MONTHLY_RANK_TYPE : TOTAL_RANK_TYPE
+      sortList = await api.getSortList(type)
+      sortListCache[tab] = sortList
+    }
+    rankedProducts.value = buildRankedProducts(allProducts.value, sortList)
     rankRenderCount.value = RANK_BATCH_SIZE
   } catch (e) {
     console.error('Failed to load ranking:', e)
+    rankedProducts.value = []
   } finally {
+    isRankingLoading.value = false
+  }
+}
+
+function switchRankTab(tab: RankTab) {
+  if (currentTab.value === tab) return
+  currentTab.value = tab
+  loadTab(tab)
+}
+
+onMounted(async () => {
+  try {
+    const prodRes = await api.getProducts({ status: 'on' })
+    allProducts.value = prodRes.data
+    await loadTab(currentTab.value)
+  } catch (e) {
+    console.error('Failed to load ranking products:', e)
     isRankingLoading.value = false
   }
 })
@@ -130,6 +188,42 @@ function goDetail(productId: string) {
 .hero-bg {
   width: 100%;
   height: 100%;
+}
+
+.rank-tabs {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  gap: 48rpx;
+  padding: 0 48rpx;
+  height: 88rpx;
+  background: #ffffff;
+  border-bottom: 1rpx solid #dfe2e0;
+}
+.rank-tab {
+  position: relative;
+  height: 88rpx;
+  display: flex;
+  align-items: center;
+}
+.rank-tab-text {
+  font-size: 30rpx;
+  color: #7c8481;
+  font-weight: 500;
+}
+.rank-tab.active .rank-tab-text {
+  color: #1a211e;
+  font-weight: 700;
+}
+.rank-tab-underline {
+  position: absolute;
+  left: 50%;
+  bottom: 12rpx;
+  transform: translateX(-50%);
+  width: 44rpx;
+  height: 6rpx;
+  border-radius: 6rpx;
+  background: #12a594;
 }
 
 .rank-list {
