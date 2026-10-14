@@ -48,6 +48,8 @@ export const api = {
 
   getCategories: () => request<{ data: any[] }>('/categories'),
 
+  getPrimaryCategories: () => request<{ data: any[] }>('/primary-categories'),
+
   getProducts: (opts?: { categoryId?: string; status?: 'on' | 'off' }) => {
     const params: string[] = ['pageSize=100']
     if (opts?.categoryId) params.push(`category=${opts.categoryId}`)
@@ -62,6 +64,32 @@ export const api = {
   getSortList: (type: number) =>
     request<{ data: string[] }>(`/products/sort-list?type=${type}`, SORT_TIMEOUT).then((res) => res.data || []),
 
-  submitSuggestion: (content: string) =>
-    postRequest<{ success: boolean }>(`${BASE_URL}/suggestions`, { content }),
+  submitSuggestion: (payload: { content: string; images?: string[]; contact?: string }) =>
+    postRequest<{ success: boolean; id: string }>(`${BASE_URL}/suggestions`, payload),
+
+  // 按本地保存的 id 查询自己提交的建议状态
+  getMySuggestions: (ids: string[]) =>
+    request<{ data: any[] }>(`/suggestions/status?ids=${encodeURIComponent(ids.join(','))}`).then((res) => res.data || []),
+
+  uploadSuggestionImage: (filePath: string) =>
+    new Promise<string>((resolve, reject) => {
+      uni.uploadFile({
+        url: `${BASE_URL}/suggestions/upload`,
+        filePath,
+        name: 'file',
+        timeout: 30000,
+        success: (res) => {
+          if (res.statusCode === 200) {
+            try {
+              resolve((JSON.parse(res.data) as { url: string }).url)
+            } catch {
+              reject(new Error('上传结果解析失败'))
+            }
+          } else {
+            reject(new Error(`上传失败: ${res.statusCode}`))
+          }
+        },
+        fail: (err) => reject(err),
+      })
+    }),
 }

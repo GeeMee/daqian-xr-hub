@@ -1,10 +1,11 @@
 import { Outlet, NavLink, useNavigate } from 'react-router-dom'
 import { useAuthStore } from '../stores/auth'
-import { Package, Grid3x3, Image, Settings, Users, FileText, MessageSquare, LogOut } from 'lucide-react'
+import { Package, Grid3x3, Image, Settings, Users, FileText, MessageSquare, Route as RouteIcon, LogOut } from 'lucide-react'
 
 const navItems = [
   { path: '/products', label: '产品管理', icon: Package },
   { path: '/categories', label: '题材管理', icon: Grid3x3 },
+  { path: '/dongxian', label: '动线管理', icon: RouteIcon },
   { path: '/banners', label: '轮播图管理', icon: Image },
   { path: '/settings', label: '基础信息', icon: Settings },
   { path: '/suggestions', label: '建议箱', icon: MessageSquare },

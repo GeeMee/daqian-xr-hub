@@ -1,0 +1,447 @@
+{
+  "products": [
+    {
+      "productIndex": "3005",
+      "name": "大唐穿越记neo3"
+    },
+    {
+      "productIndex": "3006",
+      "name": "三星堆的召唤neo3"
+    },
+    {
+      "productIndex": "3007",
+      "name": "恐龙大冒险neo3"
+    },
+    {
+      "productIndex": "3008",
+      "name": "失落的海底城neo3"
+    },
+    {
+      "productIndex": "3009",
+      "name": "戏鬼neo3"
+    }
+  ],
+  "dongxians": [
+    {
+      "sourceId": 3,
+      "sizeName": "8x8",
+      "deviceType": 0,
+      "recommendDevices": 8,
+      "maxDevices": 12,
+      "sortOrder": 64,
+      "productIndexes": [
+        "7005",
+        "7100",
+        "7004",
+        "7003",
+        "7400",
+        "7007",
+        "7008"
+      ]
+    },
+    {
+      "sourceId": 4,
+      "sizeName": "8x10",
+      "deviceType": 0,
+      "recommendDevices": 10,
+      "maxDevices": 15,
+      "sortOrder": 80,
+      "productIndexes": [
+        "7100",
+        "7003",
+        "7005",
+        "7004",
+        "7400",
+        "7007",
+        "7008",
+        "10007",
+        "10008",
+        "10009"
+      ]
+    },
+    {
+      "sourceId": 5,
+      "sizeName": "8x12",
+      "deviceType": 0,
+      "recommendDevices": 12,
+      "maxDevices": 18,
+      "sortOrder": 96,
+      "productIndexes": [
+        "7400",
+        "7003",
+        "7100",
+        "7005",
+        "7004",
+        "7007",
+        "7008"
+      ]
+    },
+    {
+      "sourceId": 6,
+      "sizeName": "9x22",
+      "deviceType": 0,
+      "recommendDevices": 24,
+      "maxDevices": 30,
+      "sortOrder": 198,
+      "productIndexes": [
+        "7005"
+      ]
+    },
+    {
+      "sourceId": 8,
+      "sizeName": "10x15",
+      "deviceType": 0,
+      "recommendDevices": 18,
+      "maxDevices": 25,
+      "sortOrder": 150,
+      "productIndexes": [
+        "7100",
+        "7003",
+        "7005",
+        "7400",
+        "7004",
+        "7007",
+        "7008"
+      ]
+    },
+    {
+      "sourceId": 9,
+      "sizeName": "12x23",
+      "deviceType": 0,
+      "recommendDevices": 30,
+      "maxDevices": 40,
+      "sortOrder": 276,
+      "productIndexes": [
+        "7100",
+        "7005",
+        "7400",
+        "7004"
+      ]
+    },
+    {
+      "sourceId": 10,
+      "sizeName": "13x16",
+      "deviceType": 0,
+      "recommendDevices": 25,
+      "maxDevices": 30,
+      "sortOrder": 208,
+      "productIndexes": [
+        "7100",
+        "7003",
+        "7400",
+        "7005",
+        "7004",
+        "7007",
+        "7008"
+      ]
+    },
+    {
+      "sourceId": 11,
+      "sizeName": "15x24",
+      "deviceType": 0,
+      "recommendDevices": 40,
+      "maxDevices": 50,
+      "sortOrder": 360,
+      "productIndexes": [
+        "7100",
+        "7003",
+        "7400",
+        "7005",
+        "7004",
+        "7007",
+        "7008"
+      ]
+    },
+    {
+      "sourceId": 15,
+      "sizeName": "7x15",
+      "deviceType": 0,
+      "recommendDevices": 15,
+      "maxDevices": 20,
+      "sortOrder": 105,
+      "productIndexes": [
+        "7100",
+        "7005",
+        "7004",
+        "7003",
+        "7400",
+        "7007",
+        "7008"
+      ]
+    },
+    {
+      "sourceId": 16,
+      "sizeName": "13x20",
+      "deviceType": 0,
+      "recommendDevices": 40,
+      "maxDevices": 40,
+      "sortOrder": 260,
+      "productIndexes": [
+        "7100",
+        "7005",
+        "7004",
+        "7007",
+        "7400",
+        "7003",
+        "7008"
+      ]
+    },
+    {
+      "sourceId": 18,
+      "sizeName": "5x5",
+      "deviceType": 0,
+      "recommendDevices": 5,
+      "maxDevices": 6,
+      "sortOrder": 25,
+      "productIndexes": [
+        "7005",
+        "7100",
+        "7400",
+        "7004",
+        "7003",
+        "7007",
+        "7008"
+      ]
+    },
+    {
+      "sourceId": 19,
+      "sizeName": "6x8",
+      "deviceType": 0,
+      "recommendDevices": 8,
+      "maxDevices": 12,
+      "sortOrder": 48,
+      "productIndexes": [
+        "7005",
+        "7100",
+        "7400",
+        "7004",
+        "7003",
+        "7007",
+        "7008"
+      ]
+    },
+    {
+      "sourceId": 20,
+      "sizeName": "6x10",
+      "deviceType": 0,
+      "recommendDevices": 8,
+      "maxDevices": 12,
+      "sortOrder": 60,
+      "productIndexes": [
+        "7100",
+        "7003",
+        "7005",
+        "7004",
+        "7400",
+        "7007",
+        "7008",
+        "10002"
+      ]
+    },
+    {
+      "sourceId": 23,
+      "sizeName": "9x23",
+      "deviceType": 0,
+      "recommendDevices": 25,
+      "maxDevices": 30,
+      "sortOrder": 207,
+      "productIndexes": [
+        "7005",
+        "7100",
+        "7400",
+        "7004",
+        "7003",
+        "7007",
+        "7008"
+      ]
+    },
+    {
+      "sourceId": 27,
+      "sizeName": "6x6",
+      "deviceType": 0,
+      "recommendDevices": 5,
+      "maxDevices": 8,
+      "sortOrder": 36,
+      "productIndexes": [
+        "7005",
+        "7004",
+        "7100",
+        "7400",
+        "7003",
+        "7007",
+        "7008"
+      ]
+    },
+    {
+      "sourceId": 29,
+      "sizeName": "12x20",
+      "deviceType": 0,
+      "recommendDevices": 40,
+      "maxDevices": 40,
+      "sortOrder": 240,
+      "productIndexes": [
+        "7005",
+        "7400",
+        "7004",
+        "7003",
+        "7007",
+        "7008"
+      ]
+    },
+    {
+      "sourceId": 32,
+      "sizeName": "7x20",
+      "deviceType": 0,
+      "recommendDevices": 20,
+      "maxDevices": 25,
+      "sortOrder": 140,
+      "productIndexes": [
+        "7005",
+        "7100",
+        "7400",
+        "7004",
+        "7003",
+        "7007",
+        "7008"
+      ]
+    },
+    {
+      "sourceId": 33,
+      "sizeName": "7x10",
+      "deviceType": 0,
+      "recommendDevices": 10,
+      "maxDevices": 12,
+      "sortOrder": 70,
+      "productIndexes": [
+        "2001",
+        "2002",
+        "2005",
+        "2006",
+        "2007",
+        "2010",
+        "2015"
+      ]
+    },
+    {
+      "sourceId": 34,
+      "sizeName": "5x6",
+      "deviceType": 0,
+      "recommendDevices": 6,
+      "maxDevices": 6,
+      "sortOrder": 30,
+      "productIndexes": [
+        "2001",
+        "2002",
+        "2005",
+        "2006",
+        "2007",
+        "2015",
+        "2010",
+        "2008",
+        "3011"
+      ]
+    },
+    {
+      "sourceId": 1,
+      "sizeName": "6x6",
+      "deviceType": 1,
+      "recommendDevices": 5,
+      "maxDevices": 8,
+      "sortOrder": 36,
+      "productIndexes": [
+        "7005",
+        "7100",
+        "7400",
+        "7004",
+        "7003",
+        "7007",
+        "7008"
+      ]
+    },
+    {
+      "sourceId": 25,
+      "sizeName": "10x12",
+      "deviceType": 1,
+      "recommendDevices": 15,
+      "maxDevices": 20,
+      "sortOrder": 120,
+      "productIndexes": [
+        "3007",
+        "3008",
+        "3006",
+        "3005",
+        "3003",
+        "3004",
+        "3009"
+      ]
+    },
+    {
+      "sourceId": 26,
+      "sizeName": "6x8",
+      "deviceType": 1,
+      "recommendDevices": 8,
+      "maxDevices": 12,
+      "sortOrder": 48,
+      "productIndexes": [
+        "3005",
+        "3003",
+        "3004",
+        "3008",
+        "3007",
+        "3006",
+        "3009"
+      ]
+    },
+    {
+      "sourceId": 28,
+      "sizeName": "7x15",
+      "deviceType": 1,
+      "recommendDevices": 15,
+      "maxDevices": 20,
+      "sortOrder": 105,
+      "productIndexes": [
+        "3008",
+        "3007",
+        "3006",
+        "3005",
+        "3009",
+        "3004",
+        "3003"
+      ]
+    },
+    {
+      "sourceId": 30,
+      "sizeName": "6x10",
+      "deviceType": 1,
+      "recommendDevices": 8,
+      "maxDevices": 12,
+      "sortOrder": 60,
+      "productIndexes": [
+        "3004",
+        "3003",
+        "3005",
+        "3008",
+        "3007",
+        "3006",
+        "3009"
+      ]
+    },
+    {
+      "sourceId": 31,
+      "sizeName": "8x10",
+      "deviceType": 1,
+      "recommendDevices": 12,
+      "maxDevices": 15,
+      "sortOrder": 80,
+      "productIndexes": [
+        "3008",
+        "3007",
+        "3006",
+        "3005",
+        "3003",
+        "3004",
+        "3009"
+      ]
+    }
+  ]
+}

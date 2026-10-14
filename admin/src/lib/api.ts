@@ -41,12 +41,12 @@ export const api = {
     },
   },
   products: {
-    list: (params?: { search?: string; category?: string; status?: string }) => {
+    list: (params?: { search?: string; category?: string; status?: string; pageSize?: number }) => {
       const query = new URLSearchParams()
       if (params?.search) query.set('search', params.search)
       if (params?.category) query.set('category', params.category)
       if (params?.status) query.set('status', params.status)
-      query.set('pageSize', '100')
+      query.set('pageSize', String(params?.pageSize ?? 100))
       return request<{ data: any[]; total: number }>(`/products?${query}`)
     },
     get: (id: string) => request<any>(`/products/${id}`),
@@ -59,6 +59,32 @@ export const api = {
     create: (data: any) => request<any>('/categories', { method: 'POST', body: JSON.stringify(data) }),
     update: (id: string, data: any) => request<any>(`/categories/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
     delete: (id: string) => request<any>(`/categories/${id}`, { method: 'DELETE' }),
+    setProducts: (id: string, productIds: string[]) =>
+      request<any>(`/categories/${id}/products`, { method: 'POST', body: JSON.stringify({ productIds }) }),
+  },
+  primaryCategories: {
+    list: () => request<{ data: any[] }>('/primary-categories'),
+    create: (data: any) => request<any>('/primary-categories', { method: 'POST', body: JSON.stringify(data) }),
+    update: (id: string, data: any) => request<any>(`/primary-categories/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
+    delete: (id: string) => request<any>(`/primary-categories/${id}`, { method: 'DELETE' }),
+    setProducts: (id: string, productIds: string[]) =>
+      request<any>(`/primary-categories/${id}/products`, { method: 'POST', body: JSON.stringify({ productIds }) }),
+  },
+  dongxian: {
+    // deviceType 传 0/1 按设备类型筛选，不传或传 -1 返回全部
+    list: (params?: { deviceType?: number }) => {
+      const query = new URLSearchParams()
+      if (params?.deviceType !== undefined && params.deviceType >= 0) {
+        query.set('deviceType', String(params.deviceType))
+      }
+      return request<{ data: any[] }>(`/dongxian?${query}`)
+    },
+    get: (id: string) => request<any>(`/dongxian/${id}`),
+    create: (data: any) => request<any>('/dongxian', { method: 'POST', body: JSON.stringify(data) }),
+    update: (id: string, data: any) => request<any>(`/dongxian/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
+    delete: (id: string) => request<any>(`/dongxian/${id}`, { method: 'DELETE' }),
+    setProducts: (id: string, productIds: string[]) =>
+      request<any>(`/dongxian/${id}/products`, { method: 'POST', body: JSON.stringify({ productIds }) }),
   },
   banners: {
     list: () => request<{ data: any[] }>('/banners'),
@@ -72,6 +98,16 @@ export const api = {
   },
   suggestions: {
     list: () => request<{ data: any[] }>('/suggestions'),
+    update: (id: string, data: { reply?: string; status?: string }) =>
+      request<{ success: boolean; data: any }>(`/suggestions/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
+  },
+  admins: {
+    list: () => request<{ data: any[] }>('/admins'),
+    create: (data: { username: string; password: string; role: string }) =>
+      request<any>('/admins', { method: 'POST', body: JSON.stringify(data) }),
+    update: (id: string, data: { username?: string; password?: string; role?: string }) =>
+      request<any>(`/admins/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
+    delete: (id: string) => request<any>(`/admins/${id}`, { method: 'DELETE' }),
   },
   upload: (file: File, onProgress?: (percent: number) => void) => {
     return new Promise<{ url: string }>((resolve, reject) => {

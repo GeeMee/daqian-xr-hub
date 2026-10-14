@@ -62,7 +62,7 @@
                 @click="goDetail(product.id)"
               >
                 <view class="recommend-cover">
-                  <image class="cover-image" :src="ossImg(product.poster, 300)" mode="aspectFit" lazy-load />
+                  <image class="cover-image" :src="posterImg(product.poster, 300)" mode="aspectFill" lazy-load />
                 </view>
                 <view class="recommend-info">
                   <text class="recommend-name">{{ product.name }}</text>
@@ -87,7 +87,7 @@
             @click="goDetail(product.id)"
           >
             <view class="new-poster-wrap">
-              <image class="new-poster" :src="ossImg(product.poster, 400)" mode="aspectFill" lazy-load />
+              <image class="new-poster" :src="posterImg(product.poster, 400)" mode="aspectFill" lazy-load />
             </view>
             <view class="new-info">
               <text class="new-name">{{ product.name }}</text>
@@ -105,10 +105,11 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
+import { onShow, onShareAppMessage, onShareTimeline } from '@dcloudio/uni-app'
 import NavBar from '../../components/NavBar.vue'
 import SectionTitle from '../../components/SectionTitle.vue'
 import { api } from '../../lib/api'
-import { ossImg } from '../../lib/image'
+import { ossImg, posterImg } from '../../lib/image'
 
 const navHeight = ref(0)
 const isHomeLoading = ref(true)
@@ -120,33 +121,31 @@ const homeData = ref<{ banners: any[]; recommendedProducts: any[]; newProducts: 
 })
 const upcomingRecommended = ref<any[]>([])
 
-const recommendColumns = computed(() => {
-  const list = homeData.value.recommendedProducts
-  const cols: any[][] = []
-  for (let i = 0; i < list.length; i += 3) {
-    cols.push(list.slice(i, i + 3))
-  }
-  return cols
-})
+// 推荐位每列 3 个，一屏正好 4 列（列宽见样式），超过 12 个横向滑动查看
+const RECOMMEND_ROWS = 3
 
-const upcomingColumns = computed(() => {
-  const list = upcomingRecommended.value
+function toColumns(list: any[]) {
   const cols: any[][] = []
-  for (let i = 0; i < list.length; i += 3) {
-    cols.push(list.slice(i, i + 3))
+  for (let i = 0; i < list.length; i += RECOMMEND_ROWS) {
+    cols.push(list.slice(i, i + RECOMMEND_ROWS))
   }
   return cols
-})
+}
+
+const recommendColumns = computed(() => toColumns(homeData.value.recommendedProducts))
+
+const upcomingColumns = computed(() => toColumns(upcomingRecommended.value))
 
 const activeRecommendColumns = computed(() => {
   return recommendTab.value === 'showing' ? recommendColumns.value : upcomingColumns.value
 })
 
-onMounted(async () => {
-  const systemInfo = uni.getSystemInfoSync()
-  const statusBarHeight = systemInfo.statusBarHeight || 0
-  navHeight.value = statusBarHeight + 44
+// tab 页只创建一次，后台改了产品名/海报后不刷新会一直显示旧内容（详情页每次都是新拉的，
+// 于是出现「列表名字和详情页对不上」）。这里在页面重新展示且数据超过 REFRESH_INTERVAL 时静默重拉。
+const REFRESH_INTERVAL = 30 * 1000
+let lastLoadedAt = 0
 
+async function loadHome() {
   const [homeRes, upcomingRes] = await Promise.allSettled([
     api.getHomeData(),
     api.getUpcoming(),
@@ -169,7 +168,22 @@ onMounted(async () => {
     console.error('Failed to load upcoming:', upcomingRes.reason)
   }
 
+  lastLoadedAt = Date.now()
+}
+
+onMounted(async () => {
+  const systemInfo = uni.getSystemInfoSync()
+  const statusBarHeight = systemInfo.statusBarHeight || 0
+  navHeight.value = statusBarHeight + 44
+
+  await loadHome()
   isHomeLoading.value = false
+})
+
+// 从详情页返回 / 切回该 tab 时静默刷新（不显示骨架屏）
+onShow(() => {
+  if (!lastLoadedAt || Date.now() - lastLoadedAt < REFRESH_INTERVAL) return
+  loadHome()
 })
 
 function getHomeDelayClass(index: number) {
@@ -189,6 +203,33 @@ function stripHtml(html: string): string {
   return html.replace(/<[^>]+>/g, '')
 }
 
+const SHARE_TITLE = '大千迷境XR影院 · 沉浸式观影体验'
+
+// 分享卡片封面：优先用首页第一张轮播图，没有则返回空（让微信自动截图）
+function getShareImage(): string {
+  const firstBanner = homeData.value.banners[0]
+  return firstBanner?.image ? ossImg(firstBanner.image, 750) : ''
+}
+
+// 转发给朋友（右上角"···"菜单 → 转发）
+onShareAppMessage(() => {
+  const imageUrl = getShareImage()
+  return {
+    title: SHARE_TITLE,
+    path: '/pages/index/index',
+    ...(imageUrl ? { imageUrl } : {}),
+  }
+})
+
+// 分享到朋友圈（需基础库 2.11.3+）
+onShareTimeline(() => {
+  const imageUrl = getShareImage()
+  return {
+    title: SHARE_TITLE,
+    query: '',
+    ...(imageUrl ? { imageUrl } : {}),
+  }
+})
 
 </script>
 
@@ -228,7 +269,7 @@ function stripHtml(html: string): string {
 
 /* 顶部品牌背景：渐变底色 + 纹理图 + 底部淡出，贴近 Figma 表头 */
 .page-bg-gradient {
-  position: absolute;
+  position: fixed;
   top: 0;
   left: 0;
   right: 0;
@@ -238,7 +279,7 @@ function stripHtml(html: string): string {
 }
 
 .page-bg-brand {
-  position: absolute;
+  position: fixed;
   top: 0;
   left: 0;
   right: 0;
@@ -249,7 +290,7 @@ function stripHtml(html: string): string {
 }
 
 .page-bg-fade {
-  position: absolute;
+  position: fixed;
   top: 420rpx;
   left: 0;
   right: 0;

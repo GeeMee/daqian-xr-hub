@@ -16,14 +16,57 @@ model Category {
   products  Product[] @relation("ProductCategories")
 }
 
+// 一级大类（可动态管理）。Product.productType 仍以名称字符串存储，
+// 重命名时由后端级联更新所有产品的 productType。
+model PrimaryCategory {
+  id        String   @id @default(cuid())
+  name      String   @unique
+  sortOrder Int      @default(0)
+  // 该一级大类的温馨提示模板：新建产品选中此大类时自动带入产品的温馨提示。
+  // 为空时接口按大类名称回退到内置默认模板（见 lib/noticeTemplates.ts）
+  noticeTemplate String? @db.Text
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+// 动线模型：一条动线 = 一个场地尺寸 + 一种设备类型，下面挂着一组可运营的产品。
+// 初始数据来自供应商表 tbl_dongxianmodel，sourceId 保留其 dxid 以便重复同步时幂等更新。
+model Dongxian {
+  id               String    @id @default(cuid())
+  sourceId         Int?      @unique
+  // 动线尺寸，如 8x8、15x24（对应 dxtypename）
+  sizeName         String    @default("")
+  // 设备类型：0=Pico 4 UE 1=Pico Neo3（对应 shebeitype）
+  deviceType       Int       @default(0)
+  recommendDevices Int       @default(0)
+  maxDevices       Int       @default(0)
+  sortOrder        Int       @default(0)
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+  products         Product[] @relation("ProductDongxians")
+}
+
 model Product {
   id              String     @id @default(cuid())
   name            String
   categories      Category[] @relation("ProductCategories")
+  dongxians       Dongxian[] @relation("ProductDongxians")
   poster          String   @default("")
+  productType     String   @default("")
+  // 产品索引：仅后台管理/数据库使用，不在小程序端展示
+  productIndex    String   @default("")
+  // 产品类型：0=自研产品 1=定制产品 2=发行产品 3=密室产品。仅后台/库使用，不在小程序端展示
+  productSource   Int      @default(0)
+  // 资源包大小：只存数字（如 12.5），单位默认 GB；自己带了单位（如 800MB）则原样保存。仅后台/库使用
+  packageSize     String   @default("")
+  // 兼容字段：始终与 videos 的第一个视频保持一致，供旧客户端读取
   video           String   @default("")
+  // 多视频，JSON 数组字符串，最多 5 个，按数组顺序在详情页自上而下排布
+  videos          String?  @db.Text
   shortDesc       String   @default("")
   horrorLevel     Int      @default(1)
+  // 解密难度（密室类产品），0=不显示
+  puzzleLevel     Int      @default(0)
   playerCount     String   @default("")
   duration        String   @default("")
   description     String   @db.Text
@@ -31,6 +74,7 @@ model Product {
   notices         String   @db.Text
   images          String?  @db.Text
   isRecommended   Boolean  @default(false)
+  isNew           Boolean  @default(false)
   isOnShelf       Boolean  @default(true)
   sortOrder       Int      @default(0)
   onlineDate      String   @default("")
@@ -49,10 +93,27 @@ model Banner {
   updatedAt DateTime @updatedAt
 }
 
+// 后台管理员账号（真实登录鉴权）。密码以 scrypt 存储：salt:hash
+model Admin {
+  id          String    @id @default(cuid())
+  username    String    @unique
+  password    String
+  role        String    @default("normal") // super=超级管理员 normal=普通管理员
+  lastLoginAt DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+}
+
 model Suggestion {
-  id        String   @id @default(cuid())
-  content   String   @db.Text
-  createdAt DateTime @default(now())
+  id        String    @id @default(cuid())
+  content   String    @db.Text
+  contact   String    @default("")
+  images    String?   @db.Text
+  // 状态：pending=暂未查阅，viewed=已查阅，replied=已答复
+  status    String    @default("pending")
+  reply     String    @db.VarChar(500) @default("")
+  repliedAt DateTime?
+  createdAt DateTime  @default(now())
 }
 
 model Setting {

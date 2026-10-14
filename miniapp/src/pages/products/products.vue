@@ -2,6 +2,30 @@
   <view class="page">
     <NavBar variant="light" :show-logo="false" />
     <view class="page-content" :style="{ paddingTop: navHeight + 'px' }">
+      <!-- 顶部搜索框：对「正在热映」「即将上映」同时生效 -->
+      <view class="search-bar">
+        <view class="search-box">
+          <view class="search-icon"></view>
+          <input
+            v-model="searchKeyword"
+            class="search-input"
+            type="text"
+            confirm-type="search"
+            placeholder="搜索产品名称"
+            placeholder-class="search-placeholder"
+            @input="onSearchInput"
+          />
+          <view
+            v-if="searchKeyword"
+            class="search-clear tap-feedback"
+            hover-class="tap-feedback-hover"
+            @click="clearSearch"
+          >
+            <text class="search-clear-icon">×</text>
+          </view>
+        </view>
+      </view>
+
       <!-- 顶部 Tab：正在热映 / 即将上映 -->
       <view class="top-tabs">
         <view
@@ -25,6 +49,14 @@
       <!-- 正在热映 -->
       <block v-if="currentTab === 'showing'">
         <view class="filter-bar">
+          <view
+            class="filter-trigger"
+            :class="{ active: panelKey === 'type' }"
+            @click="openPanel('type')"
+          >
+            <text class="filter-text">{{ selectedTypeLabel }}</text>
+            <text class="filter-arrow" :class="{ up: panelKey === 'type' }"></text>
+          </view>
           <view
             class="filter-trigger"
             :class="{ active: panelKey === 'category' }"
@@ -56,7 +88,7 @@
               </view>
             </view>
             <view v-else-if="filteredProducts.length === 0" class="empty-state">
-              <text class="empty-text">暂无产品</text>
+              <text class="empty-text">{{ keyword ? '没有找到相关产品' : '暂无产品' }}</text>
             </view>
             <view
               v-for="(product, index) in visibleProducts"
@@ -66,7 +98,7 @@
               @click="goDetail(product.id)"
             >
               <view class="poster-wrap">
-                <image class="poster" :src="ossImg(product.poster, 300)" mode="aspectFill" lazy-load />
+                <image class="poster" :src="posterImg(product.poster, 300)" mode="aspectFill" lazy-load />
               </view>
               <view class="card-body">
                 <view class="card-main">
@@ -85,7 +117,7 @@
           <!-- 筛选面板 -->
           <view v-if="panelKey" class="panel-mask" @click="closePanel">
             <view class="panel" @click.stop>
-              <view class="panel-options" :class="panelKey === 'category' ? 'category-options' : 'sort-options'">
+              <view class="panel-options" :class="panelKey === 'sort' ? 'sort-options' : 'category-options'">
                 <view
                   v-for="(opt, index) in panelOptions"
                   :key="opt.id"
@@ -115,27 +147,27 @@
               </view>
             </view>
           </view>
-          <view v-else-if="upcomingAll.length === 0" class="empty-state">
-            <text class="empty-text">敬请期待</text>
+          <view v-else-if="filteredUpcomingAll.length === 0" class="empty-state">
+            <text class="empty-text">{{ keyword ? '没有找到相关产品' : '敬请期待' }}</text>
           </view>
 
           <template v-else>
             <!-- 推荐栏 -->
-            <block v-if="upcomingRecommended.length > 0">
+            <block v-if="filteredUpcomingRecommended.length > 0">
               <view class="upcoming-section-title">
                 <text class="upcoming-section-text">推荐</text>
               </view>
               <scroll-view class="recommended-scroll" scroll-x :show-scrollbar="false">
                 <view class="recommended-track">
                   <view
-                    v-for="(product, index) in upcomingRecommended"
+                    v-for="(product, index) in filteredUpcomingRecommended"
                     :key="product.id"
                     class="poster-cell tap-feedback"
                     hover-class="tap-feedback-hover"
                     @click="goDetail(product.id)"
                   >
                     <view class="poster-cell-img">
-                      <image class="poster-img" :src="ossImg(product.poster, 440)" mode="aspectFill" lazy-load />
+                      <image class="poster-img" :src="posterImg(product.poster, 440)" mode="aspectFill" lazy-load />
                     </view>
                     <text class="poster-cell-name">{{ product.name }}</text>
                   </view>
@@ -156,7 +188,7 @@
                 @click="goDetail(product.id)"
               >
                 <view class="poster-wrap">
-                  <image class="poster" :src="ossImg(product.poster, 300)" mode="aspectFill" lazy-load />
+                  <image class="poster" :src="posterImg(product.poster, 300)" mode="aspectFill" lazy-load />
                 </view>
                 <view class="card-body">
                   <view class="card-main">
@@ -177,17 +209,20 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
+import { onShow } from '@dcloudio/uni-app'
 import NavBar from '../../components/NavBar.vue'
 import { api } from '../../lib/api'
-import { ossImg } from '../../lib/image'
+import { posterImg } from '../../lib/image'
+import { PRODUCT_TYPES } from '../../lib/productTypes'
 
 type TabKey = 'showing' | 'upcoming'
-type PanelKey = '' | 'category' | 'sort'
+type PanelKey = '' | 'type' | 'category' | 'sort'
 
 const navHeight = ref(0)
 const currentTab = ref<TabKey>('showing')
 
 const categories = ref<any[]>([])
+const primaryTypes = ref<string[]>([...PRODUCT_TYPES])
 const products = ref<any[]>([])
 const upcomingRecommended = ref<any[]>([])
 const upcomingAll = ref<any[]>([])
@@ -195,6 +230,10 @@ const upcomingLoaded = ref(false)
 const upcomingLoading = ref(false)
 const isShowingLoading = ref(true)
 
+const searchKeyword = ref('')
+const keyword = computed(() => searchKeyword.value.trim().toLowerCase())
+
+const selectedType = ref<string>('all')
 const selectedCategory = ref<string>('all')
 const selectedSort = ref<string>('default')
 const sortOrderList = ref<string[]>([])
@@ -210,6 +249,11 @@ const sortOptions = [
   { id: 'daily', name: '当日最热' },
 ]
 
+const selectedTypeLabel = computed(() => {
+  if (selectedType.value === 'all') return '全部类型'
+  return selectedType.value
+})
+
 const selectedCategoryLabel = computed(() => {
   if (selectedCategory.value === 'all') return '全部题材'
   return categories.value.find((item) => item.id === selectedCategory.value)?.name || '全部题材'
@@ -220,6 +264,9 @@ const selectedSortLabel = computed(() => {
 })
 
 const panelOptions = computed(() => {
+  if (panelKey.value === 'type') {
+    return [{ id: 'all', name: '全部' }, ...primaryTypes.value.map((t) => ({ id: t, name: t }))]
+  }
   if (panelKey.value === 'category') {
     return [{ id: 'all', name: '全部' }, ...categories.value]
   }
@@ -230,13 +277,25 @@ const panelOptions = computed(() => {
 })
 
 const currentPanelValue = computed(() => {
+  if (panelKey.value === 'type') return selectedType.value
   if (panelKey.value === 'category') return selectedCategory.value
   if (panelKey.value === 'sort') return selectedSort.value
   return ''
 })
 
+function matchKeyword(product: any) {
+  if (!keyword.value) return true
+  return String(product?.name || '').toLowerCase().includes(keyword.value)
+}
+
 const filteredProducts = computed(() => {
   let list = products.value
+  if (keyword.value) {
+    list = list.filter(matchKeyword)
+  }
+  if (selectedType.value !== 'all') {
+    list = list.filter((p) => p.productType === selectedType.value)
+  }
   if (selectedCategory.value !== 'all') {
     list = list.filter(
       (p) => Array.isArray(p.categories) && p.categories.some((c: any) => c.id === selectedCategory.value)
@@ -250,13 +309,40 @@ const filteredProducts = computed(() => {
       return idxA - idxB
     })
   } else {
-    sorted.sort((a, b) => (a.sortOrder || 0) - (b.sortOrder || 0))
+    // 综合排序：按上线时间倒序，越新越靠前；没填上线时间的排在最后，同一天再按后台排序值
+    sorted.sort((a, b) => {
+      const dateA = String(a.onlineDate || '')
+      const dateB = String(b.onlineDate || '')
+      if (dateA !== dateB) {
+        if (!dateA) return 1
+        if (!dateB) return -1
+        return dateB.localeCompare(dateA)
+      }
+      return (a.sortOrder || 0) - (b.sortOrder || 0)
+    })
   }
   return sorted
 })
 
+const filteredUpcomingAll = computed(() =>
+  keyword.value ? upcomingAll.value.filter(matchKeyword) : upcomingAll.value
+)
+const filteredUpcomingRecommended = computed(() =>
+  keyword.value ? upcomingRecommended.value.filter(matchKeyword) : upcomingRecommended.value
+)
+
 const visibleProducts = computed(() => filteredProducts.value.slice(0, showingRenderCount.value))
-const visibleUpcomingAll = computed(() => upcomingAll.value.slice(0, upcomingRenderCount.value))
+const visibleUpcomingAll = computed(() => filteredUpcomingAll.value.slice(0, upcomingRenderCount.value))
+
+function onSearchInput() {
+  resetShowingRenderCount()
+  resetUpcomingRenderCount()
+}
+
+function clearSearch() {
+  searchKeyword.value = ''
+  onSearchInput()
+}
 
 function loadMoreShowing() {
   if (showingRenderCount.value < filteredProducts.value.length) {
@@ -265,7 +351,7 @@ function loadMoreShowing() {
 }
 
 function loadMoreUpcoming() {
-  if (upcomingRenderCount.value < upcomingAll.value.length) {
+  if (upcomingRenderCount.value < filteredUpcomingAll.value.length) {
     upcomingRenderCount.value += PAGE_BATCH_SIZE
   }
 }
@@ -296,23 +382,52 @@ function getSortIndex(productName: string): number {
   return minIdx
 }
 
+// tab 页只创建一次，后台改了产品名/海报后不刷新会一直显示旧内容（详情页每次都是新拉的，
+// 于是出现「列表名字和详情页对不上」）。这里在页面重新展示且数据超过 REFRESH_INTERVAL 时静默重拉。
+const REFRESH_INTERVAL = 30 * 1000
+let lastLoadedAt = 0
+
+async function loadShowing(keepRenderCount = false) {
+  const [catRes, prodRes, primaryRes] = await Promise.all([
+    api.getCategories(),
+    api.getProducts({ status: 'on' }),
+    api.getPrimaryCategories().catch(() => null),
+  ])
+  categories.value = catRes.data
+  products.value = prodRes.data
+  if (primaryRes?.data?.length) {
+    primaryTypes.value = primaryRes.data.map((c: any) => c.name)
+  }
+  if (!keepRenderCount) resetShowingRenderCount()
+  lastLoadedAt = Date.now()
+}
+
 onMounted(async () => {
   const systemInfo = uni.getSystemInfoSync()
   const statusBarHeight = systemInfo.statusBarHeight || 0
   navHeight.value = statusBarHeight + 44
 
   try {
-    const [catRes, prodRes] = await Promise.all([
-      api.getCategories(),
-      api.getProducts({ status: 'on' }),
-    ])
-    categories.value = catRes.data
-    products.value = prodRes.data
-    resetShowingRenderCount()
+    await loadShowing()
   } catch (e) {
     console.error('Failed to load showing products:', e)
   } finally {
     isShowingLoading.value = false
+  }
+})
+
+// 从详情页返回 / 切回该 tab 时静默刷新（不显示骨架屏、保留已展开的条数）
+onShow(async () => {
+  if (!lastLoadedAt || Date.now() - lastLoadedAt < REFRESH_INTERVAL) return
+  try {
+    await loadShowing(true)
+    if (upcomingLoaded.value) {
+      const upcomingRes = await api.getUpcoming()
+      upcomingRecommended.value = upcomingRes.recommended
+      upcomingAll.value = upcomingRes.all
+    }
+  } catch (e) {
+    console.error('Failed to refresh products:', e)
   }
 })
 
@@ -342,7 +457,7 @@ function switchTab(key: TabKey) {
   }
 }
 
-function openPanel(key: 'category' | 'sort') {
+function openPanel(key: 'type' | 'category' | 'sort') {
   if (panelKey.value === key) {
     closePanel()
     return
@@ -355,7 +470,10 @@ function closePanel() {
 }
 
 async function selectPanelOption(id: string) {
-  if (panelKey.value === 'category') {
+  if (panelKey.value === 'type') {
+    selectedType.value = id
+    resetShowingRenderCount()
+  } else if (panelKey.value === 'category') {
     selectedCategory.value = id
     resetShowingRenderCount()
   } else if (panelKey.value === 'sort') {
@@ -446,6 +564,81 @@ function goDetail(productId: string) {
   background: #f7f9f8;
 }
 
+/* 顶部搜索框：白底，与下方 Tab 栏连成一片 */
+.search-bar {
+  flex-shrink: 0;
+  padding: 16rpx 32rpx 8rpx;
+  box-sizing: border-box;
+  background: #ffffff;
+  animation: product-fade-in 0.28s ease-out both;
+}
+
+.search-box {
+  position: relative;
+  display: flex;
+  align-items: center;
+  height: 68rpx;
+  padding: 0 24rpx;
+  box-sizing: border-box;
+  background: #eef1f0;
+  border-radius: 34rpx;
+}
+
+.search-icon {
+  flex-shrink: 0;
+  position: relative;
+  width: 22rpx;
+  height: 22rpx;
+  margin-right: 16rpx;
+  border: 3rpx solid #868e8b;
+  border-radius: 50%;
+  box-sizing: border-box;
+}
+
+.search-icon::after {
+  content: '';
+  position: absolute;
+  right: -8rpx;
+  bottom: -6rpx;
+  width: 12rpx;
+  height: 3rpx;
+  background: #868e8b;
+  border-radius: 3rpx;
+  transform: rotate(45deg);
+}
+
+.search-input {
+  flex: 1;
+  min-width: 0;
+  height: 100%;
+  font-size: 26rpx;
+  line-height: 68rpx;
+  color: #1a211e;
+}
+
+.search-placeholder {
+  font-size: 26rpx;
+  color: #a0a6a4;
+}
+
+.search-clear {
+  flex-shrink: 0;
+  width: 36rpx;
+  height: 36rpx;
+  margin-left: 12rpx;
+  border-radius: 50%;
+  background: #c9cfcd;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.search-clear-icon {
+  font-size: 24rpx;
+  line-height: 24rpx;
+  color: #ffffff;
+}
+
 /* Figma: 二级 Tab Bar 375×53，白底，底部留 12px */
 .top-tabs {
   display: flex;
@@ -495,16 +688,16 @@ function goDetail(productId: string) {
   display: flex;
   align-items: center;
   justify-content: flex-start;
-  gap: 24rpx;
+  gap: 16rpx;
   height: 104rpx;
-  padding: 24rpx 48rpx;
+  padding: 24rpx 32rpx;
   box-sizing: border-box;
   background: #ffffff;
   animation: product-fade-in 0.28s ease-out 0.04s both;
 }
 
 .filter-trigger {
-  min-width: 200rpx;
+  min-width: 180rpx;
   height: 64rpx;
   display: inline-flex;
   flex: 0 0 auto;
@@ -856,7 +1049,7 @@ function goDetail(productId: string) {
   display: inline-flex;
   gap: 20rpx;
   padding: 8rpx 0;
-  height: 314rpx;
+  height: 322rpx;
   box-sizing: border-box;
 }
 
@@ -870,7 +1063,7 @@ function goDetail(productId: string) {
 
 .poster-cell-img {
   width: 200rpx;
-  height: 260rpx;
+  height: 266rpx; /* 3:4 竖版统一比例 */
   border-radius: 12rpx;
   overflow: hidden;
   background: #eef1f0;

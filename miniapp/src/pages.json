@@ -41,6 +41,13 @@
         "navigationBarTitleText": "建议箱",
         "navigationStyle": "custom"
       }
+    },
+    {
+      "path": "pages/my-suggestions/my-suggestions",
+      "style": {
+        "navigationBarTitleText": "我的建议",
+        "navigationStyle": "custom"
+      }
     }
   ],
   "globalStyle": {

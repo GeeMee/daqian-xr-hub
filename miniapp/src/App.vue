@@ -1,5 +1,14 @@
 <script setup lang="ts">
-const appReady = true
+import { onLaunch, onShow } from '@dcloudio/uni-app'
+import { refreshReplyTabBadge } from './lib/mySuggestions'
+
+// 启动 / 每次回到前台时，检查是否有建议被回复，刷新底部"我的"红点
+onLaunch(() => {
+  refreshReplyTabBadge()
+})
+onShow(() => {
+  refreshReplyTabBadge()
+})
 </script>
 
 <style>

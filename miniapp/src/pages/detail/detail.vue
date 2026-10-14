@@ -1,47 +1,68 @@
 <template>
   <view class="page">
-    <scroll-view class="page-scroll" scroll-y :show-scrollbar="false">
-      <!-- 视频 / 海报区域 -->
-      <view class="video-section">
-        <video
-          v-if="product?.video && showVideo"
-          class="product-video"
-          :src="product.video"
-          :poster="ossImg(product.poster, 800)"
-          controls
-          autoplay
-          object-fit="cover"
-        />
-        <view v-else class="video-placeholder">
-          <image class="video-poster" :src="ossImg(product?.poster, 800)" mode="aspectFill" lazy-load />
-          <view v-if="product?.video" class="play-btn tap-feedback" hover-class="tap-feedback-hover" @click="startVideo">
-            <text class="play-icon">▶</text>
-          </view>
-        </view>
+    <!-- 顶部渐变标头（沿用「我的」页浅色渐变风格），标题移到内容区左上角 -->
+    <NavBar title="" variant="light" :show-logo="false" />
+    <view
+      class="detail-back tap-feedback"
+      hover-class="tap-feedback-hover"
+      :style="{ top: (statusBarHeight + 6) + 'px' }"
+      @click="goBack"
+    >
+      <view class="back-arrow"></view>
+    </view>
 
-        <view class="back-btn tap-feedback" hover-class="tap-feedback-hover" :style="{ top: (statusBarHeight + 12) + 'px' }" @click="goBack">
-          <view class="back-arrow"></view>
-        </view>
-      </view>
+    <scroll-view class="page-scroll" scroll-y :show-scrollbar="false">
+      <!-- 标头占位 -->
+      <view class="nav-placeholder" :style="{ height: navHeight + 'px' }"></view>
 
       <view v-if="product" class="content">
-        <text class="product-name">{{ product.name }}</text>
+        <!-- 标头改版：海报图在左，右侧竖排 名称 / 上线时间 / 时长（参考想看卡片的排版） -->
+        <view class="header-row">
+          <image
+            v-if="product.poster"
+            class="header-poster"
+            :src="ossImg(product.poster, 420)"
+            mode="aspectFill"
+          />
+          <!-- 右侧信息列撑满海报高度：名称 + 标签在上，时间/时长/星级贴底，避免内容全挤在上半部分 -->
+          <view class="header-info">
+            <view class="header-top">
+              <text class="product-name">{{ product.name }}</text>
+              <view v-if="headerTags.length > 0" class="tag-row">
+                <text v-for="tag in headerTags" :key="tag" class="header-tag">{{ tag }}</text>
+              </view>
+            </view>
 
-        <view class="meta-row">
-          <text class="meta-item">上线时间：{{ product.onlineDate }}</text>
-          <text class="meta-dot">·</text>
-          <text class="meta-item">产品时长：{{ product.duration }}</text>
-        </view>
+            <view class="header-bottom">
+              <view class="meta-col">
+                <text v-if="product.onlineDate" class="meta-item">上线时间：{{ product.onlineDate }}</text>
+                <text v-if="product.duration" class="meta-item">产品时长：{{ product.duration }}</text>
+              </view>
 
-        <view v-if="isEscapeRoom && product.horrorLevel" class="horror-row">
-          <text class="horror-label">恐怖指数</text>
-          <view class="horror-stars">
-            <text
-              v-for="n in 5"
-              :key="n"
-              class="horror-star"
-              :class="{ filled: n <= product.horrorLevel }"
-            >★</text>
+              <view v-if="isEscapeRoom && product.horrorLevel" class="horror-row">
+                <text class="horror-label">恐怖指数</text>
+                <view class="horror-stars">
+                  <text
+                    v-for="n in 5"
+                    :key="n"
+                    class="horror-star"
+                    :class="{ filled: n <= product.horrorLevel }"
+                  >★</text>
+                </view>
+              </view>
+
+              <view v-if="isEscapeRoom && product.puzzleLevel" class="horror-row">
+                <text class="horror-label">解密难度</text>
+                <view class="horror-stars">
+                  <text
+                    v-for="n in 5"
+                    :key="n"
+                    class="horror-star puzzle-star"
+                    :class="{ filled: n <= product.puzzleLevel }"
+                  >★</text>
+                </view>
+              </view>
+            </view>
           </view>
         </view>
 
@@ -109,8 +130,14 @@
         <view class="content-bottom-space"></view>
       </view>
       <view v-else class="content detail-skeleton">
-        <view class="skeleton-line detail-title-skeleton skeleton-block"></view>
-        <view class="skeleton-line detail-meta-skeleton skeleton-block"></view>
+        <view class="header-row">
+          <view class="header-poster skeleton-block"></view>
+          <view class="header-info">
+            <view class="skeleton-line detail-title-skeleton skeleton-block"></view>
+            <view class="skeleton-line detail-meta-skeleton skeleton-block"></view>
+            <view class="skeleton-line detail-meta-skeleton short skeleton-block"></view>
+          </view>
+        </view>
         <view class="section-block">
           <view class="section-title-row">
             <view class="section-title-mark"></view>
@@ -133,18 +160,35 @@
 
 <script setup lang="ts">
 import { ref, computed } from 'vue'
-import { onLoad } from '@dcloudio/uni-app'
+import { onLoad, onShareAppMessage, onShareTimeline } from '@dcloudio/uni-app'
+import NavBar from '../../components/NavBar.vue'
 import { api } from '../../lib/api'
 import { ossImg } from '../../lib/image'
 
 const product = ref<any>(null)
+const productId = ref('')
 const isFavorited = ref(false)
 const statusBarHeight = ref(0)
-const showVideo = ref(false)
-
+const navHeight = computed(() => statusBarHeight.value + 44)
 const isEscapeRoom = computed(() => {
+  if ((product.value?.productType || '').includes('密室')) return true
   const cats = product.value?.categories || []
   return cats.some((c: any) => (c.name || '').includes('密室'))
+})
+
+// 标头标签：一级大类 + 最多两个题材，去重后展示
+const headerTags = computed<string[]>(() => {
+  const names = [
+    product.value?.productType,
+    ...(product.value?.categories || []).map((c: any) => c?.name),
+  ]
+  const tags: string[] = []
+  for (const name of names) {
+    const text = String(name || '').trim()
+    if (text && !tags.includes(text)) tags.push(text)
+    if (tags.length >= 3) break
+  }
+  return tags
 })
 
 const noticeLines = computed(() => {
@@ -183,10 +227,10 @@ const noticeLines = computed(() => {
 })
 
 onLoad(async (options) => {
-  showVideo.value = false
   const systemInfo = uni.getSystemInfoSync()
   statusBarHeight.value = systemInfo.statusBarHeight || 0
   if (options?.id) {
+    productId.value = options.id
     try {
       product.value = await api.getProduct(options.id)
     } catch (e) {
@@ -195,9 +239,30 @@ onLoad(async (options) => {
   }
 })
 
-function startVideo() {
-  showVideo.value = true
+// 分享卡片封面：用产品海报，没有则让微信自动截图
+function getShareImage(): string {
+  return product.value?.poster ? ossImg(product.value.poster, 750) : ''
 }
+
+// 转发给朋友（右上角"···"菜单 → 转发）
+onShareAppMessage(() => {
+  const imageUrl = getShareImage()
+  return {
+    title: product.value?.name || '大千迷境XR影院',
+    path: `/pages/detail/detail?id=${productId.value}`,
+    ...(imageUrl ? { imageUrl } : {}),
+  }
+})
+
+// 分享到朋友圈（需基础库 2.11.3+）
+onShareTimeline(() => {
+  const imageUrl = getShareImage()
+  return {
+    title: product.value?.name || '大千迷境XR影院',
+    query: `id=${productId.value}`,
+    ...(imageUrl ? { imageUrl } : {}),
+  }
+})
 
 function isNoticeHeading(line: unknown): boolean {
   return /^【.*】$/.test(String(line).trim())
@@ -238,78 +303,46 @@ function previewImage(index: number) {
 
 .page {
   height: 100vh;
-  background-color: #ffffff;
+  background: #ffffff;
   position: relative;
 }
 
 .page-scroll {
   height: 100vh;
-  background: #ffffff;
+  background: transparent;
 }
 
-/* Figma: Video Section 375×200 */
-.video-section {
-  position: relative;
-  width: 100%;
-  height: 400rpx;
-  background: #141414;
-  overflow: hidden;
-  animation: detail-fade-in 0.45s ease-out both;
-}
-
-.product-video,
-.video-placeholder,
-.video-poster {
-  width: 100%;
-  height: 100%;
-}
-
-.play-btn {
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  width: 72rpx;
-  height: 72rpx;
-  border-radius: 50%;
-  background: rgba(26, 33, 30, 0.5);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.play-icon {
-  color: #ffffff;
-  font-size: 28rpx;
-  margin-left: 5rpx;
-}
-
-.back-btn {
+/* 返回按钮：浮在浅色标头左侧 */
+.detail-back {
   position: fixed;
-  left: 32rpx;
-  width: 72rpx;
-  height: 72rpx;
+  left: 24rpx;
+  z-index: 1001;
+  width: 64rpx;
+  height: 64rpx;
   border-radius: 50%;
-  background: rgba(26, 33, 30, 0.5);
+  background: rgba(255, 255, 255, 0.55);
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 1000;
+}
+
+.nav-placeholder {
+  width: 100%;
 }
 
 .back-arrow {
   width: 18rpx;
   height: 18rpx;
-  border-left: 4rpx solid #ffffff;
-  border-bottom: 4rpx solid #ffffff;
+  border-left: 4rpx solid #1a211e;
+  border-bottom: 4rpx solid #1a211e;
   transform: rotate(45deg);
   margin-left: 6rpx;
 }
 
 /* Figma: Content padding 24px */
 .content {
-  padding: 48rpx 48rpx 0;
-  background: #ffffff;
+  padding: 40rpx 48rpx 0;
+  background: transparent;
   box-sizing: border-box;
   animation: detail-fade-up 0.52s cubic-bezier(0.2, 0.8, 0.2, 1) both;
 }
@@ -328,9 +361,14 @@ function previewImage(index: number) {
 }
 
 .detail-meta-skeleton {
-  width: 420rpx;
+  width: 320rpx;
   height: 28rpx;
   margin-top: 24rpx;
+}
+
+.detail-meta-skeleton.short {
+  width: 240rpx;
+  margin-top: 16rpx;
 }
 
 .detail-section-title-skeleton {
@@ -348,39 +386,83 @@ function previewImage(index: number) {
   width: 72%;
 }
 
+/* 标头：海报在左（竖版 3:4，与后台裁剪比例一致），信息列在右并撑满海报高度 */
+.header-row {
+  display: flex;
+  align-items: stretch;
+  gap: 28rpx;
+}
+
+.header-poster {
+  flex-shrink: 0;
+  width: 200rpx;
+  height: 267rpx;
+  border-radius: 16rpx;
+  background: #eef1f0;
+}
+
+.header-info {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  /* 名称/标签靠上，时间与时长贴底，最后一行与海报下沿对齐 */
+  justify-content: space-between;
+}
+
 .product-name {
   display: block;
   font-size: 40rpx;
   font-weight: 700;
   color: #1a211e;
-  line-height: 48rpx;
+  line-height: 50rpx;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  overflow: hidden;
 }
 
-.meta-row {
+.tag-row {
   display: flex;
-  align-items: center;
   flex-wrap: wrap;
-  gap: 0;
-  margin-top: 24rpx;
+  gap: 10rpx;
+  margin-top: 14rpx;
 }
 
-.meta-item,
-.meta-dot {
-  font-size: 26rpx;
+.header-tag {
+  padding: 4rpx 14rpx;
+  border-radius: 8rpx;
+  background: rgba(18, 165, 148, 0.1);
+  font-size: 22rpx;
+  line-height: 30rpx;
+  color: #12a594;
+}
+
+/* 上线时间、产品时长各占一行，带标签前缀；整块贴住海报下沿 */
+.header-bottom {
+  margin-top: 32rpx;
+  /* 往上收，视觉上不贴海报下沿 */
+  margin-bottom: 32rpx;
+}
+
+.meta-col {
+  display: flex;
+  flex-direction: column;
+  gap: 12rpx;
+}
+
+.meta-item {
+  font-size: 30rpx;
   font-weight: 400;
-  color: #7c8481;
-  line-height: 32rpx;
-}
-
-.meta-dot {
-  margin: 0 16rpx;
+  color: #6b7370;
+  line-height: 38rpx;
 }
 
 .horror-row {
   display: flex;
   align-items: center;
   gap: 16rpx;
-  margin-top: 16rpx;
+  margin-top: 14rpx;
 }
 
 .horror-label {
@@ -403,6 +485,11 @@ function previewImage(index: number) {
 
 .horror-star.filled {
   color: #f5704a;
+}
+
+/* 解密难度用主题绿，和恐怖指数的橙色区分开 */
+.puzzle-star.filled {
+  color: #12a594;
 }
 
 .section-block {
@@ -463,6 +550,7 @@ function previewImage(index: number) {
 
 .recommend-line {
   display: block;
+  word-break: break-all;
 }
 
 .notice-section {

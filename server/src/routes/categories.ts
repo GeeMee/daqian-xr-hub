@@ -29,6 +29,21 @@ categoriesRouter.put('/:id', async (req, res) => {
   res.json(category)
 })
 
+// 批量设置该题材下的产品（整体覆盖）：勾选的产品关联该题材，未勾选的取消关联（不影响其它题材）
+categoriesRouter.post('/:id/products', async (req, res) => {
+  const { productIds } = req.body as { productIds: string[] }
+  const ids = Array.isArray(productIds) ? productIds : []
+  try {
+    const category = await prisma.category.update({
+      where: { id: req.params.id },
+      data: { products: { set: ids.map((id) => ({ id })) } },
+    })
+    res.json({ success: true, id: category.id })
+  } catch (e: any) {
+    res.status(400).json({ error: e.message || '保存失败' })
+  }
+})
+
 categoriesRouter.delete('/:id', async (req, res) => {
   const count = await prisma.product.count({
     where: { categories: { some: { id: req.params.id } } },

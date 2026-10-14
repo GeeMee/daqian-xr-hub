@@ -1,4 +1,4 @@
-import type { Product, Category, Banner, Admin, OperationLog, BrandInfo, StoreInfo } from '../types'
+import type { Product, Category, Banner, OperationLog, BrandInfo, StoreInfo } from '../types'
 
 export const mockCategories: Category[] = [
   { id: 'cat-1', name: '自研产品', productCount: 3, createdAt: '2024-01-15' },
@@ -78,11 +78,6 @@ export const mockBanners: Banner[] = [
   { id: 'b-1', image: 'https://picsum.photos/seed/banner1/750/350', productId: 'p-001', productName: '深渊之眼', sortOrder: 1, createdAt: '2024-06-01' },
   { id: 'b-2', image: 'https://picsum.photos/seed/banner2/750/350', productId: 'p-002', productName: '星际迷航', sortOrder: 2, createdAt: '2025-03-01' },
   { id: 'b-3', image: 'https://picsum.photos/seed/banner3/750/350', productId: 'p-004', productName: '侏罗纪重生', sortOrder: 3, createdAt: '2025-05-01' },
-]
-
-export const mockAdmins: Admin[] = [
-  { id: 'a-1', username: 'admin', phone: '13800138000', role: 'super', permissions: [], lastLoginAt: '2025-05-28 10:30' },
-  { id: 'a-2', username: '运营小王', phone: '13900139000', role: 'normal', permissions: ['products', 'categories', 'banners'], lastLoginAt: '2025-05-27 14:20' },
 ]
 
 export const mockLogs: OperationLog[] = [

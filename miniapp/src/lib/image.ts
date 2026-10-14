@@ -14,3 +14,17 @@ export function ossImg(url: string | undefined | null, width: number): string {
   const sep = url.includes('?') ? '&' : '?'
   return `${url}${sep}x-oss-process=image/resize,w_${width}/format,webp/quality,q_80`
 }
+
+// 未上传海报时的「敬请期待」官方海报（CDN 图，与服务端创建产品时的默认值一致）。
+// 服务端已在创建/编辑产品时自动填充此图，这里仅作为历史空数据的兜底。
+export const DEFAULT_POSTER = 'https://cdn.daqianmijing.com/daqian-xr-hub/image/1782809001062-rqdb6w3dfi.jpg'
+
+/**
+ * 产品海报专用：有图则走 OSS 缩略图，无图则回退到「敬请期待」海报（同样走缩略图）。
+ * @param url 产品 poster 字段
+ * @param width 目标宽度（同 ossImg）
+ */
+export function posterImg(url: string | undefined | null, width: number): string {
+  const poster = url && typeof url === 'string' && url.trim() ? url : DEFAULT_POSTER
+  return ossImg(poster, width)
+}

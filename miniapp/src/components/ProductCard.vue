@@ -1,7 +1,7 @@
 <template>
   <view class="product-card" :class="[`mode-${mode}`]" @click="handleClick">
     <view class="card-poster">
-      <image class="poster-image" :src="ossImg(product.poster, 400)" mode="aspectFill" lazy-load />
+      <image class="poster-image" :src="posterImg(product.poster, 400)" mode="aspectFill" lazy-load />
       <view v-if="product.tags.length > 0" class="card-tags">
         <text v-for="tag in product.tags" :key="tag" class="tag" :class="getTagClass(tag)">
           {{ tag }}
@@ -17,7 +17,7 @@
 
 <script setup lang="ts">
 import type { Product } from '../types'
-import { ossImg } from '../lib/image'
+import { posterImg } from '../lib/image'
 
 const props = defineProps<{
   product: Product

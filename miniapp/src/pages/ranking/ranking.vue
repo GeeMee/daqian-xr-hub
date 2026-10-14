@@ -55,7 +55,7 @@
           <text class="badge-text">{{ index < 3 ? `TOP ${index + 1}` : index + 1 }}</text>
         </view>
         <view class="rank-poster">
-          <image class="poster-img" :src="ossImg(item.poster, 280)" mode="aspectFill" lazy-load />
+          <image class="poster-img" :src="posterImg(item.poster, 280)" mode="aspectFill" lazy-load />
         </view>
         <view class="rank-info">
           <text class="rank-name">{{ item.name }}</text>
@@ -71,8 +71,9 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
+import { onShow } from '@dcloudio/uni-app'
 import { api } from '../../lib/api'
-import { ossImg } from '../../lib/image'
+import { posterImg } from '../../lib/image'
 
 type RankTab = 'total' | 'monthly'
 
@@ -91,6 +92,7 @@ const isRankingLoading = ref(true)
 const sortListCache: Record<RankTab, string[] | null> = { total: null, monthly: null }
 
 const RANK_BATCH_SIZE = 10
+const MAX_RANK_COUNT = 20 // 票房榜单只显示前20名
 const rankRenderCount = ref(RANK_BATCH_SIZE)
 
 const visibleRankedProducts = computed(() => rankedProducts.value.slice(0, rankRenderCount.value))
@@ -101,21 +103,31 @@ function loadMoreRanks() {
   }
 }
 
-// 按排序API返回的有序名字匹配产品：命中即进榜（精确优先，再子串），
+// 名称归一化：去空格、全角转半角、去掉常见分隔标点，避免"云顶之城 2077"↔"云顶之城2077"、
+// "星际远征：未知疆域"↔"星际远征-未知疆域"这类标点/空格差异导致匹配失败。
+function normalizeName(s: string): string {
+  return (s || '')
+    .replace(/[！-～]/g, (ch) => String.fromCharCode(ch.charCodeAt(0) - 0xFEE0)) // 全角转半角
+    .replace(/[\s·・、。,.\-—–~～:：_]/g, '') // 去空格与常见分隔标点
+    .toLowerCase()
+}
+
+// 按排序API返回的有序名字匹配产品：命中即进榜（归一化后精确优先，再子串），
 // 未命中的名字顺延跳过，不留空号；不在名单里的产品不展示。
 function buildRankedProducts(products: any[], sortList: string[]) {
   const used = new Set<string>()
   const result: any[] = []
+  const norm = products.map((p: any) => ({ p, n: normalizeName(p.name) }))
   for (const name of sortList) {
-    let match = products.find((p: any) => !used.has(p.id) && p.name === name)
-    if (!match) {
-      match = products.find(
-        (p: any) => !used.has(p.id) && (p.name.includes(name) || name.includes(p.name))
-      )
+    const key = normalizeName(name)
+    if (!key) continue
+    let hit = norm.find((x) => !used.has(x.p.id) && x.n === key)
+    if (!hit) {
+      hit = norm.find((x) => !used.has(x.p.id) && x.n !== '' && (x.n.includes(key) || key.includes(x.n)))
     }
-    if (match) {
-      used.add(match.id)
-      result.push(match)
+    if (hit) {
+      used.add(hit.p.id)
+      result.push(hit.p)
     }
   }
   return result
@@ -130,7 +142,7 @@ async function loadTab(tab: RankTab) {
       sortList = await api.getSortList(type)
       sortListCache[tab] = sortList
     }
-    rankedProducts.value = buildRankedProducts(allProducts.value, sortList)
+    rankedProducts.value = buildRankedProducts(allProducts.value, sortList).slice(0, MAX_RANK_COUNT)
     rankRenderCount.value = RANK_BATCH_SIZE
   } catch (e) {
     console.error('Failed to load ranking:', e)
@@ -146,14 +158,36 @@ function switchRankTab(tab: RankTab) {
   loadTab(tab)
 }
 
+// tab 页只创建一次，后台改了产品名/海报后不刷新会一直显示旧内容（详情页每次都是新拉的，
+// 于是出现「榜单名字和详情页对不上」）。切回该 tab 且超过 REFRESH_INTERVAL 时静默重拉产品。
+const REFRESH_INTERVAL = 30 * 1000
+let lastLoadedAt = 0
+
 onMounted(async () => {
   try {
     const prodRes = await api.getProducts({ status: 'on' })
     allProducts.value = prodRes.data
+    lastLoadedAt = Date.now()
     await loadTab(currentTab.value)
   } catch (e) {
     console.error('Failed to load ranking products:', e)
     isRankingLoading.value = false
+  }
+})
+
+// 静默刷新：只换数据、不显示骨架屏
+onShow(async () => {
+  if (!lastLoadedAt || Date.now() - lastLoadedAt < REFRESH_INTERVAL) return
+  try {
+    const prodRes = await api.getProducts({ status: 'on' })
+    allProducts.value = prodRes.data
+    lastLoadedAt = Date.now()
+    const sortList = sortListCache[currentTab.value]
+    if (sortList) {
+      rankedProducts.value = buildRankedProducts(allProducts.value, sortList).slice(0, MAX_RANK_COUNT)
+    }
+  } catch (e) {
+    console.error('Failed to refresh ranking products:', e)
   }
 })
 
@@ -171,7 +205,8 @@ function goDetail(productId: string) {
 
 <style scoped lang="scss">
 .page {
-  min-height: 100vh;
+  height: 100vh;
+  overflow: hidden;
   background-color: #f7f9f8;
   display: flex;
   flex-direction: column;

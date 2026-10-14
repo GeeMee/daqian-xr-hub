@@ -5,6 +5,7 @@ import { LoginPage } from '../pages/login'
 import { ProductsPage } from '../pages/products'
 import { ProductEditPage } from '../pages/products/edit'
 import { CategoriesPage } from '../pages/categories'
+import { DongxianPage } from '../pages/dongxian'
 import { BannersPage } from '../pages/banners'
 import { SettingsPage } from '../pages/settings'
 import { AdminsPage } from '../pages/admins'
@@ -28,6 +29,7 @@ export function AppRoutes() {
           <Route path="products/new" element={<ProductEditPage />} />
           <Route path="products/:id/edit" element={<ProductEditPage />} />
           <Route path="categories" element={<CategoriesPage />} />
+          <Route path="dongxian" element={<DongxianPage />} />
           <Route path="banners" element={<BannersPage />} />
           <Route path="settings" element={<SettingsPage />} />
           <Route path="suggestions" element={<SuggestionsPage />} />

@@ -9,6 +9,7 @@
     "db:push": "prisma db push",
     "db:seed": "tsx src/seed.ts",
     "db:seed-themes": "tsx src/seed-themes.ts",
+    "db:seed-primary": "tsx src/seed-primary-categories.ts",
     "db:studio": "prisma studio",
     "compress:images": "tsx src/compress-existing-images.ts"
   },

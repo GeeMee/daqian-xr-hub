@@ -2,12 +2,21 @@ export interface Product {
   id: string
   name: string
   category: string
+  productIndex?: string
+  productSource?: number
+  /** 资源包大小，只存数字，默认单位 GB */
+  packageSize?: string
   poster: string
+  /** 兼容字段，等于 videos[0] */
   video?: string
+  /** 多视频，最多 5 个，详情页按顺序自上而下排布 */
+  videos?: string[]
   shortDesc: string
   description: string
   tags: string[]
   horrorLevel: number
+  /** 解密难度（密室类产品），0=不显示 */
+  puzzleLevel?: number
   playerCount: string
   duration: string
   onlineDate: string
@@ -53,10 +62,9 @@ export interface StoreInfo {
 export interface Admin {
   id: string
   username: string
-  phone: string
   role: 'super' | 'normal'
-  permissions: string[]
-  lastLoginAt: string
+  lastLoginAt?: string | null
+  createdAt?: string
 }
 
 export interface OperationLog {
